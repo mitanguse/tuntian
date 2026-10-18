@@ -20,6 +20,7 @@
     stats: { crafted: 0, killed: 0, soldCoins: 0 },
     uid: 1,
     pid: 1,
+    pop: [],
   };
 
   /* ---------------- 基础工具 ---------------- */
@@ -87,9 +88,21 @@
           return cardHTML(c, depth, badge);
         })
         .join('');
-      html += `<div class="pile" data-pid="${p.pid}" style="left:${p.x}px;top:${p.y}px;z-index:${Math.round(p.y / 4) + 2}">${inner}</div>`;
+      html += `<div class="pile${p.busy ? ' crafting' : ''}${(S.pop || []).includes(p.pid) ? ' pop' : ''}" data-pid="${p.pid}" style="left:${p.x}px;top:${p.y}px;z-index:${Math.round(p.y / 4) + 2}">
+        ${p.busy ? `<div class="craftTag">${p.craftLabel}中</div>` : ''}${inner}</div>`;
     }
     boardEl.innerHTML = html;
+    if ((S.pop || []).length) {
+      const pids = S.pop.slice();
+      S.pop = [];
+      pids.forEach((pid) => {
+        const el = boardEl.querySelector(`.pile[data-pid="${pid}"]`);
+        if (el) el.classList.add('pop');
+      });
+      setTimeout(() => {
+        boardEl.querySelectorAll('.pile.pop').forEach((el) => el.classList.remove('pop'));
+      }, 300);
+    }
     updateHUD();
   }
 
@@ -113,6 +126,10 @@
     if (!pileEl) return;
     const p = S.piles.find((x) => x.pid === +pileEl.dataset.pid);
     if (!p) return;
+    if (p.busy) {
+      shake(p);
+      return;
+    }
     const rect = boardEl.getBoundingClientRect();
     drag = {
       p,
@@ -181,16 +198,21 @@
     const px = cx - rect.left;
     const py = cy - rect.top;
     for (const p of S.piles) {
-      if (p === from || p.cards.length === 0) continue;
-      const dx = p.x + 47 - px;
-      const dy = p.y + 66 - py;
+      if (p === from || p.cards.length === 0 || p.busy) continue;
+      const el = boardEl.querySelector(`.pile[data-pid="${p.pid}"]`);
+      const w = el ? el.offsetWidth : 94;
+      const h = el ? el.offsetHeight : 132;
+      // 到牌矩形（含 26px 容差）的距离，比只比中心点更适合手指
+      const pad = 26;
+      const dx = Math.max(p.x - pad - px, 0, px - (p.x + w + pad));
+      const dy = Math.max(p.y - pad - py, 0, py - (p.y + h + pad));
       const d = Math.hypot(dx, dy);
       if (d < bestD) {
         bestD = d;
         best = p;
       }
     }
-    return best;
+    return bestD <= 0.1 ? best : null;
   }
 
   /* ---------------- 合并 / 战斗 ---------------- */
@@ -335,24 +357,41 @@
   }
 
   /* 每次拖放只加工一次，产出单独成堆，原料留下的部分不动 */
+  /* 合成不是瞬间完成：先把这堆锁住，播一段“在忙”的动画，到点才出卡 */
   function craft(pile) {
     const r = matchRecipe(pile.cards);
     if (!r) return false;
-    for (const [id, n] of Object.entries(r.in)) takeFrom(pile, id, n);
-    if (r.keep) {
-      for (const [id, n] of Object.entries(r.keep)) {
-        for (let i = 0; i < n; i++) pile.cards.push(makeCard(id));
+    if (pile.busy) return false;
+    pile.busy = true;
+    pile.craftLabel = r.label;
+    render();
+    setTimeout(() => {
+      pile.busy = false;
+      pile.craftLabel = null;
+      if (S.over) return render();
+      if (!S.piles.includes(pile)) return render();
+      for (const [id, n] of Object.entries(r.in)) takeFrom(pile, id, n);
+      if (r.keep) {
+        for (const [id, n] of Object.entries(r.keep)) {
+          for (let i = 0; i < n; i++) pile.cards.push(makeCard(id));
+        }
       }
-    }
-    const outCards = [];
-    for (const [id, n] of Object.entries(r.out)) {
-      for (let i = 0; i < n; i++) outCards.push(makeCard(id));
-    }
-    const spot = freeSpot(pile.x, pile.y);
-    if (outCards.length) S.piles.push(makePile(outCards, spot.x, spot.y));
-    S.discovered.add(r.id);
-    S.stats.crafted++;
-    toast(`合成 · ${r.label}`, 'good');
+      const outCards = [];
+      for (const [id, n] of Object.entries(r.out)) {
+        for (let i = 0; i < n; i++) outCards.push(makeCard(id));
+      }
+      const spot = freeSpot(pile.x, pile.y);
+      if (outCards.length) {
+        const np = makePile(outCards, spot.x, spot.y);
+        S.piles.push(np);
+        S.pop.push(np.pid);
+      }
+      S.discovered.add(r.id);
+      S.stats.crafted++;
+      toast(`合成 · ${r.label}`, 'good');
+      checkLose();
+      render();
+    }, CONFIG.CRAFT_MS);
     return true;
   }
 

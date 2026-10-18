@@ -8,6 +8,7 @@ const CONFIG = {
   START_COINS: 8,
   PILE_MAX: 6,          // 一堆最多几张卡
   DROP_RADIUS: 105,     // 拖拽吸附半径
+  CRAFT_MS: 620,        // 合成需要的时间（不是瞬间完成）
 };
 
 const CARDS = {
@@ -16,8 +17,8 @@ const CARDS = {
   soldier:  { name: '士兵', glyph: '兵', kind: 'unit', hp: 5, atk: 2, food: 1, tip: '基础战力' },
   spear:    { name: '枪兵', glyph: '枪', kind: 'unit', hp: 6, atk: 3, food: 1, tip: '克骑，攻高' },
   archer:   { name: '弓兵', glyph: '弓', kind: 'unit', hp: 5, atk: 3, food: 1, tip: '远程，先手' },
-  ironspear:{ name: '铁枪兵', glyph: '鐵', kind: 'unit', hp: 9, atk: 5, food: 1, tip: '重装精锐' },
-  strongbow:{ name: '强弓手', glyph: '彊', kind: 'unit', hp: 8, atk: 5, food: 1, tip: '百步穿杨' },
+  ironspear:{ name: '铁枪兵', glyph: '铁', kind: 'unit', hp: 9, atk: 5, food: 1, tip: '重装精锐' },
+  strongbow:{ name: '强弓手', glyph: '强', kind: 'unit', hp: 8, atk: 5, food: 1, tip: '百步穿杨' },
 
   /* ---------- 资源点（可采集，采集后消失） ---------- */
   tree:  { name: '树林', glyph: '林', kind: 'node', tip: '派村民去砍，得木材' },
@@ -27,12 +28,12 @@ const CARDS = {
   /* ---------- 资源卡（可卖钱） ---------- */
   wood:      { name: '木材', glyph: '木', kind: 'res', sell: 3 },
   stoneblock:{ name: '石料', glyph: '石', kind: 'res', sell: 3 },
-  food:      { name: '粮草', glyph: '糧', kind: 'res', sell: 2 },
+  food:      { name: '粮草', glyph: '粮', kind: 'res', sell: 2 },
 
   /* ---------- 敌人 ---------- */
-  bandit: { name: '山贼', glyph: '賊', kind: 'enemy', hp: 4, atk: 2, reward: 6, tip: '第 3 天出现' },
+  bandit: { name: '山贼', glyph: '贼', kind: 'enemy', hp: 4, atk: 2, reward: 6, tip: '第 3 天出现' },
   yellow: { name: '黄巾', glyph: '巾', kind: 'enemy', hp: 7, atk: 3, reward: 10, tip: '第 7 天出现' },
-  army:   { name: '敌军', glyph: '敵', kind: 'enemy', hp: 12, atk: 5, reward: 18, tip: '第 9 天出现' },
+  army:   { name: '敌军', glyph: '敌', kind: 'enemy', hp: 12, atk: 5, reward: 18, tip: '第 9 天出现' },
 };
 
 /* 配方：in 消耗，keep 保留在原料堆里，out 产出到新的一堆 */
