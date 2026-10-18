@@ -56,8 +56,8 @@
   function cardHTML(c, depth, badge) {
     const def = CARDS[c.id];
     let foot = '';
-    if (def.kind === 'unit' || def.kind === 'enemy') foot = `攻 ${def.atk} · 血 ${Math.max(c.hp, 0)}`;
-    else if (def.sell) foot = `卖 ${def.sell} 钱`;
+    if (def.kind === 'unit' || def.kind === 'enemy') foot = `攻${def.atk}·血${Math.max(c.hp, 0)}`;
+    else if (def.sell) foot = `卖${def.sell}钱`;
     else if (def.kind === 'node') foot = '采集点';
     const cls = ['card', 'c-' + def.kind];
     if (depth > 0) cls.push(depth === 1 ? 'back' : depth >= 5 ? 'back5' : 'back' + depth);
@@ -439,7 +439,9 @@
         }
       }
       const outCards = [];
-      for (const [id, n] of Object.entries(r.out)) {
+      // 森林这类配方是随机的：alt 里每个产物等概率抽一个
+      const outMap = r.alt ? r.alt[Math.floor(Math.random() * r.alt.length)] : r.out;
+      for (const [id, n] of Object.entries(outMap)) {
         for (let i = 0; i < n; i++) outCards.push(makeCard(id));
       }
       const spot = freeSpot(pile.x, pile.y);
@@ -694,7 +696,8 @@
   /* ---------------- 图鉴 / 帮助 ---------------- */
   function recipeLine(r) {
     const fmt = (obj) => Object.entries(obj).map(([id, n]) => CARDS[id].name + (n > 1 ? '×' + n : '')).join(' + ');
-    return `<div class="help-row"><b>${r.label}</b>　${fmt(r.in)}<span class="arrow">→</span>${fmt(r.out)}</div>`;
+    const outTxt = r.alt ? r.alt.map(fmt).join(' 或 ') : fmt(r.out);
+    return `<div class="help-row"><b>${r.label}</b>　${fmt(r.in)}<span class="arrow">→</span>${outTxt}</div>`;
   }
 
   function buildHelp() {
@@ -727,16 +730,24 @@
 
     const { w, h } = boardSize();
     const at = (fx, fy) => [w * fx - 47, h * fy - 66];
-    const layout = [
-      ['villager', ...at(0.15, 0.30)],
-      ['villager', ...at(0.15, 0.62)],
-      ['villager', ...at(0.32, 0.62)],
-      ['tree', ...at(0.42, 0.22)],
-      ['stone', ...at(0.58, 0.22)],
-      ['farm', ...at(0.74, 0.22)],
-      ['food', ...at(0.42, 0.74)],
-      ['food', ...at(0.58, 0.74)],
-    ];
+    const layout = w < 560
+      ? [
+          // 手机：3×3 网格，卡牌窄屏也不会叠在一起
+          ['villager', 10, 12], ['villager', 96, 12], ['villager', 182, 12],
+          ['tree', 10, 124], ['forest', 96, 124], ['stone', 182, 124],
+          ['farm', 10, 236], ['food', 96, 236], ['food', 182, 236],
+        ]
+      : [
+          ['villager', ...at(0.15, 0.30)],
+          ['villager', ...at(0.15, 0.62)],
+          ['villager', ...at(0.32, 0.62)],
+          ['tree', ...at(0.42, 0.22)],
+          ['forest', ...at(0.90, 0.22)],
+          ['stone', ...at(0.58, 0.22)],
+          ['farm', ...at(0.74, 0.22)],
+          ['food', ...at(0.42, 0.74)],
+          ['food', ...at(0.58, 0.74)],
+        ];
     for (const [id, x, y] of layout) {
       S.piles.push(makePile([makeCard(id)], Math.max(14, x), Math.max(14, y)));
     }
