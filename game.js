@@ -312,6 +312,75 @@
     setTimeout(() => el.classList.remove('shake'), 300);
   }
 
+  /* ---------------- 贼寇主动扑人 ---------------- */
+  // 贼寇不用玩家操作：自己一步步挪到最近的村民旁边，贴上就咬；
+  // 玩家唯一的解法是把兵拖到它身上打。咬的节奏留出反应时间。
+  const enemyTimers = new Map();
+
+  function enemyMoveTick() {
+    if (!S.running || S.over || S.paused || dragging) return;
+    const now = performance.now();
+    let moved = false;
+    const bites = [];
+
+    for (const p of S.piles) {
+      if (!p.cards.some(isEnemy)) continue;
+      // 先找村民，场上没村民了才扑别的单位
+      let pool = S.piles.filter((q) => q !== p && q.cards.some((c) => c.id === 'villager'));
+      if (!pool.length) pool = S.piles.filter((q) => q !== p && q.cards.some(isUnit));
+      if (!pool.length) continue;
+
+      let tgt = null;
+      let bestD = 1e9;
+      for (const q of pool) {
+        const d = Math.hypot(q.x - p.x, q.y - p.y);
+        if (d < bestD) { bestD = d; tgt = q; }
+      }
+      if (!tgt) continue;
+
+      const st = enemyTimers.get(p.pid) || { moveAt: 0, biteAt: 0 };
+      if (bestD > CONFIG.ENEMY_RANGE) {
+        if (now >= st.moveAt) {
+          const step = Math.min(CONFIG.ENEMY_STEP, Math.max(4, bestD - CONFIG.ENEMY_RANGE));
+          p.x += ((tgt.x - p.x) / bestD) * step;
+          p.y += ((tgt.y - p.y) / bestD) * step;
+          st.moveAt = now + CONFIG.ENEMY_MOVE_MS;
+          moved = true;
+        }
+      } else if (now >= st.biteAt) {
+        st.biteAt = now + CONFIG.ENEMY_BITE_MS;
+        const enemy = bestEnemy(p.cards);
+        const victim = tgt.cards.filter((c) => c.id === 'villager')[0] || tgt.cards.filter(isUnit)[0];
+        if (enemy && victim) {
+          victim.hp = (victim.hp || 0) - CONFIG.ENEMY_BITE_DMG;
+          bites.push({ pile: tgt, card: victim, enemy });
+        }
+      }
+      enemyTimers.set(p.pid, st);
+    }
+
+    if (!moved && !bites.length) return;
+
+    // 先结算死亡再统一重绘，避免边遍历边改数组
+    for (const b of bites) {
+      if (b.card.hp > 0) continue;
+      const i = b.pile.cards.indexOf(b.card);
+      if (i >= 0) b.pile.cards.splice(i, 1);
+    }
+    render();
+
+    for (const b of bites) {
+      const dead = b.card.hp <= 0;
+      const el = document.querySelector(`.card[data-uid="${b.card.uid}"]`);
+      if (el) el.classList.add('hurt');
+      if (dead) toast(`${CARDS[b.card.id].name}被${CARDS[b.enemy.id].name}杀了`, 'bad');
+      else toast(`${CARDS[b.enemy.id].name}咬了${CARDS[b.card.id].name}`, 'bad');
+    }
+    checkLose();
+  }
+
+  setInterval(enemyMoveTick, 300);
+
   function bestFighter(cards) {
     return cards.filter(isFighter).sort((a, b) => CARDS[b.id].atk - CARDS[a.id].atk)[0];
   }
@@ -710,7 +779,7 @@
         : `<div class="help-row" style="opacity:.45"><b>???</b>　尚未发现</div>`
     ).join('');
     $('#helpGrid').innerHTML = rows + `<div class="help-row" style="grid-column:1/-1;opacity:.75">
-      把资源拖进右下角市集卖钱；铜钱买卡包开新卡。同一堆牌拖一次就能再加工一次（比如村民 + 农田反复收粮）。每 2 天左右来一波敌人，派兵拖到敌人身上开打。</div>`;
+      把资源拖进右下角市集卖钱；铜钱买卡包开新卡。同一堆牌拖一次就能再加工一次（比如村民 + 农田反复收粮）。每 2 天左右来一波敌人：贼寇会自己爬向村民咬，你得赶紧把兵拖到它身上开打。</div>`;
   }
 
   /* ---------------- 开局 ---------------- */
@@ -727,6 +796,7 @@
     $('#btnPause').textContent = '暂停';
     $('#btnPause').classList.remove('on');
     S.discovered = new Set();
+    enemyTimers.clear();
     S.stats = { crafted: 0, killed: 0, soldCoins: 0 };
     S.uid = 1;
     S.pid = 1;
