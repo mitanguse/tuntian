@@ -300,6 +300,7 @@ body.paused .craftTag { animation: none !important; }
 }
 .help-row b { color: var(--red); }
 .help-row .arrow { color: #8a7457; margin: 0 3px; }
+.keepTip { display: inline-block; margin-left: 5px; font-style: normal; font-size: 11px; color: #6b7f4e; background: rgba(120,150,80,.14); border-radius: 4px; padding: 0 4px; }
 
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0 20px; }
 .stat { background: rgba(255,255,255,.45); border: 1px solid rgba(44,31,20,.12); border-radius: 8px; padding: 10px 6px; }
