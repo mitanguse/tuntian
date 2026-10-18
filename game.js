@@ -15,6 +15,7 @@
     day: 1,
     left: CONFIG.DAY_MS,
     running: false,
+    paused: false,
     over: false,
     discovered: new Set(),
     stats: { crafted: 0, killed: 0, soldCoins: 0 },
@@ -131,7 +132,7 @@
 
   /* 从堆里拆出最上面一张，落到旁边空位——不然混堆了就再也分不开 */
   function splitOne(pile) {
-    if (S.over || !S.running || pile.busy) return false;
+    if (S.over || !S.running || S.paused || pile.busy) return false;
     if (pile.cards.length < 2) {
       shake(pile);
       return false;
@@ -148,7 +149,7 @@
   }
 
   boardEl.addEventListener('pointerdown', (e) => {
-    if (S.over || !S.running) return;
+    if (S.over || !S.running || S.paused) return;
     const pileEl = e.target.closest('.pile');
     if (!pileEl) return;
     const p = S.piles.find((x) => x.pid === +pileEl.dataset.pid);
@@ -478,7 +479,7 @@
   }
 
   function buyPack(key) {
-    if (!S.running || S.over) return;
+    if (!S.running || S.over || S.paused) return;
     const pack = PACKS[key];
     if (S.coins < pack.cost) {
       toast('铜钱不够', 'bad');
@@ -508,12 +509,51 @@
     timerId = setInterval(() => {
       if (!S.running || S.over) return;
       const now = performance.now();
+      if (S.paused) {
+        lastTs = now;
+        return;
+      }
       S.left -= now - lastTs;
       lastTs = now;
       if (S.left <= 0) endDay();
       updateHUD();
     }, 100);
   }
+
+  /* ---------------- 暂停 ---------------- */
+  function setPaused(on) {
+    if (!S.running || S.over) return;
+    S.paused = !!on;
+    const mask = $('#pauseMask');
+    mask.classList.toggle('hidden', !S.paused);
+    $('#btnPause').textContent = S.paused ? '继续' : '暂停';
+    $('#btnPause').classList.toggle('on', S.paused);
+    if (S.paused) {
+      // 停下来的时候手里的牌应该放回去，不然会一直跟着手指
+      clearHold();
+      holdFired = false;
+      if (drag) {
+        drag.el.classList.remove('dragging');
+        drag = null;
+        dragging = false;
+        marketEl.classList.remove('hot');
+      }
+      lastTs = performance.now();
+    }
+    lastTs = performance.now();
+  }
+
+  $('#btnPause').addEventListener('click', () => setPaused(!S.paused));
+  $('#btnResume').addEventListener('click', () => setPaused(false));
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && S.running && !S.over) {
+      e.preventDefault();
+      setPaused(!S.paused);
+    }
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && S.running && !S.over && !S.paused) setPaused(true);
+  });
 
   function endDay() {
     // 1. 吃饭
@@ -645,6 +685,8 @@
     $('#panelHelp').classList.add('hidden');
     $('#panelEnd').classList.remove('hidden');
     $('#overlay').classList.add('show');
+    S.paused = false;
+    $('#pauseMask').classList.add('hidden');
   }
 
   /* ---------------- 图鉴 / 帮助 ---------------- */
@@ -671,6 +713,10 @@
     S.left = CONFIG.DAY_MS;
     S.over = false;
     S.running = false;
+    S.paused = false;
+    $('#pauseMask').classList.add('hidden');
+    $('#btnPause').textContent = '暂停';
+    $('#btnPause').classList.remove('on');
     S.discovered = new Set();
     S.stats = { crafted: 0, killed: 0, soldCoins: 0 };
     S.uid = 1;
