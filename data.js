@@ -9,6 +9,7 @@ const CONFIG = {
   PILE_MAX: 6,          // 一堆最多几张卡
   DROP_RADIUS: 105,     // 拖拽吸附半径
   CRAFT_MS: 620,        // 合成需要的时间（不是瞬间完成）
+  HOLD_MS: 350,         // 按住多久算长按拆牌
 };
 
 const CARDS = {
