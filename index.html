@@ -18,14 +18,22 @@
     <div class="hud-right">
       <div class="hud-item coins"><span class="hud-k">铜钱</span><span id="coins">0</span></div>
       <div class="hud-item"><span class="hud-k">粮草</span><span id="foodCount">0</span></div>
-      <div class="hud-item"><span class="hud-k">图鉴</span><span id="codex">0/8</span></div>
+      <div class="hud-item" id="hudCodex"><span class="hud-k">图鉴</span><span id="codex">0/8</span></div>
       <button class="btn small" id="buyRecruit">招募令 <b>10</b></button>
       <button class="btn small" id="buyTactic">锦囊 <b>18</b></button>
+      <button class="btn ghost small" id="btnPause">暂停</button>
       <button class="btn ghost small" id="btnHelp">玩法</button>
     </div>
   </header>
 
   <main id="board">
+    <div id="pauseMask" class="hidden">
+      <div class="pause-card">
+        <div class="pause-t">已 暂 停</div>
+        <div class="pause-s">牌局和时间都停着，不急</div>
+        <button class="btn big" id="btnResume">继 续</button>
+      </div>
+    </div>
     <div id="market">
       <div class="m-title">市集</div>
       <div class="m-sub">把资源拖到这里卖钱</div>
