@@ -10,6 +10,11 @@ const CONFIG = {
   DROP_RADIUS: 105,     // 拖拽吸附半径
   CRAFT_MS: 620,        // 合成需要的时间（不是瞬间完成）
   HOLD_MS: 350,         // 按住多久算长按拆牌
+  ENEMY_MOVE_MS: 1200,  // 贼寇多久挪一步
+  ENEMY_STEP: 62,       // 一步走多远（px）
+  ENEMY_RANGE: 130,      // 贴到多近开始咬（留出牌宽，不压住村民那张牌）
+  ENEMY_BITE_MS: 1500,  // 咬一口的间隔
+  ENEMY_BITE_DMG: 1,    // 一口掉多少血
 };
 
 const CARDS = {
@@ -22,10 +27,10 @@ const CARDS = {
   ironspear:{ name: '铁枪兵', glyph: '铁', kind: 'unit', hp: 9, atk: 5, food: 1, tip: '重装精锐' },
   strongbow:{ name: '强弓手', glyph: '强', kind: 'unit', hp: 8, atk: 5, food: 1, tip: '百步穿杨' },
 
-  /* ---------- 资源点（可采集，采集后消失） ---------- */
-  tree:  { name: '树林', glyph: '林', kind: 'node', tip: '派村民去砍，得木材' },
-  forest:{ name: '森林', glyph: '森', kind: 'node', tip: '派村民去，随机得木或石，永远采不完' },
-  stone: { name: '石山', glyph: '山', kind: 'node', tip: '派村民去采，得石料' },
+  /* ---------- 资源点（森林采不完，其余采完消失） ---------- */
+  tree:  { name: '树木', glyph: '树', kind: 'node', tip: '民去砍成木材，或两张树木劈成木材' },
+  forest:{ name: '森林', glyph: '森', kind: 'node', tip: '派村民去，采出树木和石头，森林不会消失' },
+  stone: { name: '石头', glyph: '岩', kind: 'node', tip: '民去采成石料，或两张石头碎成石料' },
   farm:  { name: '农田', glyph: '田', kind: 'node', tip: '派村民去收，得粮草' },
 
   /* ---------- 资源卡（可卖钱） ---------- */
@@ -45,7 +50,9 @@ const RECIPES = [
   { id: 'quarry',in: { villager: 1, stone: 1 },                 keep: { villager: 1 },              out: { stoneblock: 2 },  label: '采石' },
   { id: 'farm',  in: { villager: 1, farm: 1 },                  keep: { villager: 1, farm: 1 },     out: { food: 3 },        label: '屯田' },
   { id: 'militia', in: { villager: 1, wood: 1 },     out: { militia: 1 },     label: '编民兵' },
-  { id: 'forest', in: { villager: 1, forest: 1 },    keep: { villager: 1, forest: 1 },   out: { wood: 2 }, alt: [{ wood: 2 }, { stoneblock: 2 }], label: '进林' },
+  { id: 'forest', in: { villager: 1, forest: 1 },    keep: { villager: 1, forest: 1 },   out: { tree: 2, stone: 2 }, label: '进林' },
+  { id: 'splitwood', in: { tree: 2 },               out: { wood: 2 },        label: '劈木' },
+  { id: 'splitstone', in: { stone: 2 },             out: { stoneblock: 2 },  label: '碎石' },
   { id: 'recruit',in:{ villager: 1, wood: 1, stoneblock: 1 },                                       out: { soldier: 1 },     label: '募兵' },
   { id: 'train', in: { militia: 1, stoneblock: 1 },                                         out: { soldier: 1 },     label: '练兵' },
   { id: 'bow',   in: { soldier: 1, wood: 1 },                                                       out: { archer: 1 },      label: '制弓' },
