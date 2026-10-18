@@ -697,7 +697,10 @@
   function recipeLine(r) {
     const fmt = (obj) => Object.entries(obj).map(([id, n]) => CARDS[id].name + (n > 1 ? '×' + n : '')).join(' + ');
     const outTxt = r.alt ? r.alt.map(fmt).join(' 或 ') : fmt(r.out);
-    return `<div class="help-row"><b>${r.label}</b>　${fmt(r.in)}<span class="arrow">→</span>${outTxt}</div>`;
+    // 采集点永远不会被采没：把「不消耗」标出来，省得玩家以为要省着用
+    const keptNodes = Object.keys(r.keep || {}).filter((id) => CARDS[id].kind === 'node');
+    const keepTxt = keptNodes.length ? `<i class="keepTip">${keptNodes.map((id) => CARDS[id].name).join('、')}不消耗</i>` : '';
+    return `<div class="help-row"><b>${r.label}</b>　${fmt(r.in)}<span class="arrow">→</span>${outTxt}${keepTxt}</div>`;
   }
 
   function buildHelp() {
