@@ -524,6 +524,7 @@
   function setPaused(on) {
     if (!S.running || S.over) return;
     S.paused = !!on;
+    document.body.classList.toggle('paused', S.paused);
     const mask = $('#pauseMask');
     mask.classList.toggle('hidden', !S.paused);
     $('#btnPause').textContent = S.paused ? '继续' : '暂停';
@@ -686,6 +687,7 @@
     $('#panelEnd').classList.remove('hidden');
     $('#overlay').classList.add('show');
     S.paused = false;
+    document.body.classList.remove('paused');
     $('#pauseMask').classList.add('hidden');
   }
 
@@ -714,6 +716,7 @@
     S.over = false;
     S.running = false;
     S.paused = false;
+    document.body.classList.remove('paused');
     $('#pauseMask').classList.add('hidden');
     $('#btnPause').textContent = '暂停';
     $('#btnPause').classList.remove('on');
