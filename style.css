@@ -99,6 +99,9 @@ html, body {
   animation: fadeIn .16s ease-out;
 }
 #pauseMask.hidden { display: none; }
+/* 暂停时停掉牌堆动画，避免动画层盖到遮罩上面 */
+body.paused .pile { animation: none !important; }
+body.paused .craftTag { animation: none !important; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .pause-card {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
