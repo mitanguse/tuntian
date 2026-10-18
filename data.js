@@ -24,7 +24,7 @@ const CARDS = {
 
   /* ---------- 资源点（可采集，采集后消失） ---------- */
   tree:  { name: '树林', glyph: '林', kind: 'node', tip: '派村民去砍，得木材' },
-  forest:{ name: '森林', glyph: '森', kind: 'node', tip: '派村民去，随机得木材或石料' },
+  forest:{ name: '森林', glyph: '森', kind: 'node', tip: '派村民去，随机得木或石，永远采不完' },
   stone: { name: '石山', glyph: '山', kind: 'node', tip: '派村民去采，得石料' },
   farm:  { name: '农田', glyph: '田', kind: 'node', tip: '派村民去收，得粮草' },
 
@@ -45,7 +45,7 @@ const RECIPES = [
   { id: 'quarry',in: { villager: 1, stone: 1 },                 keep: { villager: 1 },              out: { stoneblock: 2 },  label: '采石' },
   { id: 'farm',  in: { villager: 1, farm: 1 },                  keep: { villager: 1, farm: 1 },     out: { food: 3 },        label: '屯田' },
   { id: 'militia', in: { villager: 1, wood: 1 },     out: { militia: 1 },     label: '编民兵' },
-  { id: 'forest', in: { villager: 1, forest: 1 },    keep: { villager: 1 },   out: { wood: 2 }, alt: [{ wood: 2 }, { stoneblock: 2 }], label: '进林' },
+  { id: 'forest', in: { villager: 1, forest: 1 },    keep: { villager: 1, forest: 1 },   out: { wood: 2 }, alt: [{ wood: 2 }, { stoneblock: 2 }], label: '进林' },
   { id: 'recruit',in:{ villager: 1, wood: 1, stoneblock: 1 },                                       out: { soldier: 1 },     label: '募兵' },
   { id: 'train', in: { militia: 1, stoneblock: 1 },                                         out: { soldier: 1 },     label: '练兵' },
   { id: 'bow',   in: { soldier: 1, wood: 1 },                                                       out: { archer: 1 },      label: '制弓' },
