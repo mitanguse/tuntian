@@ -15,6 +15,7 @@ const CONFIG = {
 const CARDS = {
   /* ---------- 单位 ---------- */
   villager: { name: '村民', glyph: '民', kind: 'unit', hp: 2, atk: 0, food: 1, tip: '能采集，不能作战' },
+  militia:  { name: '民兵', glyph: '勇', kind: 'unit', hp: 3, atk: 1, food: 1, tip: '临时征召，比士兵弱' },
   soldier:  { name: '士兵', glyph: '兵', kind: 'unit', hp: 5, atk: 2, food: 1, tip: '基础战力' },
   spear:    { name: '枪兵', glyph: '枪', kind: 'unit', hp: 6, atk: 3, food: 1, tip: '克骑，攻高' },
   archer:   { name: '弓兵', glyph: '弓', kind: 'unit', hp: 5, atk: 3, food: 1, tip: '远程，先手' },
@@ -23,6 +24,7 @@ const CARDS = {
 
   /* ---------- 资源点（可采集，采集后消失） ---------- */
   tree:  { name: '树林', glyph: '林', kind: 'node', tip: '派村民去砍，得木材' },
+  forest:{ name: '森林', glyph: '森', kind: 'node', tip: '派村民去，随机得木材或石料' },
   stone: { name: '石山', glyph: '山', kind: 'node', tip: '派村民去采，得石料' },
   farm:  { name: '农田', glyph: '田', kind: 'node', tip: '派村民去收，得粮草' },
 
@@ -42,7 +44,10 @@ const RECIPES = [
   { id: 'chop',  in: { villager: 1, tree: 1 },                  keep: { villager: 1 },              out: { wood: 2 },        label: '伐木' },
   { id: 'quarry',in: { villager: 1, stone: 1 },                 keep: { villager: 1 },              out: { stoneblock: 2 },  label: '采石' },
   { id: 'farm',  in: { villager: 1, farm: 1 },                  keep: { villager: 1, farm: 1 },     out: { food: 3 },        label: '屯田' },
+  { id: 'militia', in: { villager: 1, wood: 1 },     out: { militia: 1 },     label: '编民兵' },
+  { id: 'forest', in: { villager: 1, forest: 1 },    keep: { villager: 1 },   out: { wood: 2 }, alt: [{ wood: 2 }, { stoneblock: 2 }], label: '进林' },
   { id: 'recruit',in:{ villager: 1, wood: 1, stoneblock: 1 },                                       out: { soldier: 1 },     label: '募兵' },
+  { id: 'train', in: { militia: 1, stoneblock: 1 },                                         out: { soldier: 1 },     label: '练兵' },
   { id: 'bow',   in: { soldier: 1, wood: 1 },                                                       out: { archer: 1 },      label: '制弓' },
   { id: 'spear', in: { soldier: 1, stoneblock: 1 },                                                 out: { spear: 1 },       label: '锻枪' },
   { id: 'strongbow', in: { archer: 1, wood: 2 },                                                    out: { strongbow: 1 },   label: '强弓' },
@@ -53,7 +58,7 @@ const RECIPES = [
 const PACKS = {
   recruitPack: {
     name: '招募令', cost: 10, n: 3,
-    pool: ['villager', 'villager', 'tree', 'tree', 'stone', 'farm', 'wood', 'food'],
+    pool: ['villager', 'villager', 'tree', 'forest', 'stone', 'farm', 'wood', 'food'],
   },
   tacticPack: {
     name: '锦囊', cost: 18, n: 2,
