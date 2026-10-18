@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>《屯田》设计说明</title>
+<style>
+  :root { --ink:#241a12; --paper:#f2e4c6; --gold:#c9a227; --red:#9c2b22; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 48px 20px 80px;
+    background: linear-gradient(160deg,#2b1d12,#17100a);
+    color: #e9dcc0;
+    font-family: "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    line-height: 1.85; font-size: 15px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 {
+    font-family: "Songti SC","STSong","SimSun",serif;
+    font-size: 40px; letter-spacing: 10px; margin: 0 0 6px; color: var(--gold);
+  }
+  .sub { color: #a4906b; margin-bottom: 36px; font-size: 14px; }
+  h2 {
+    font-family: "Songti SC","STSong","SimSun",serif;
+    font-size: 20px; letter-spacing: 3px; margin: 38px 0 14px;
+    padding-left: 12px; border-left: 3px solid var(--gold); color: #f0e2c2;
+  }
+  p { margin: 10px 0; color: #d8c9a9; }
+  .cardbox {
+    background: rgba(242,228,198,.06); border: 1px solid rgba(201,162,39,.25);
+    border-radius: 8px; padding: 16px 20px; margin: 14px 0;
+  }
+  .loop { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+  .loop span {
+    background: rgba(201,162,39,.14); border: 1px solid rgba(201,162,39,.35);
+    border-radius: 20px; padding: 5px 13px; font-size: 13px; color: #eddfbe;
+  }
+  .loop i { color: #8a7457; font-style: normal; }
+  b { color: #f3dc9e; }
+  em { color: #8fd0a8; font-style: normal; }
+  ul { padding-left: 20px; color: #d8c9a9; }
+  li { margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.5px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid rgba(201,162,39,.18); }
+  th { color: #b9a273; font-weight: 500; font-size: 12px; letter-spacing: 1px; }
+  .back {
+    display: inline-block; margin-top: 40px; padding: 11px 26px;
+    background: linear-gradient(180deg,#d8b64a,#a8801d); color: #241a12;
+    text-decoration: none; border-radius: 6px; font-weight: 700;
+    box-shadow: 0 3px 0 #5c450c;
+  }
+  .foot { margin-top: 46px; font-size: 12px; color: #7c6a4f; }
+  @media (max-width: 640px) { body { padding: 28px 16px 60px; } h1 { font-size: 30px; letter-spacing: 6px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>屯 田</h1>
+  <div class="sub">三国题材 · 卡牌堆叠 · 生存经营 &nbsp;|&nbsp; 设计说明</div>
+
+  <p>把《堆叠大陆》的「拖动即合成」搬进三国：你是一个村子的主事者，靠堆叠把人和资源捏成兵，边屯田边扛住十天的兵灾。</p>
+
+  <h2>一、核心循环</h2>
+  <div class="cardbox">
+    <div class="loop">
+      <span>采集</span><i>→</i><span>合成</span><i>→</i><span>屯粮</span><i>→</i><span>扩军</span><i>→</i><span>御敌</span><i>→</i><span>卖钱</span><i>→</i><span>开包</span><i>→</i><span>新配方</span>
+    </div>
+    <p style="margin:10px 0 0;font-size:13.5px">一圈约 40 秒，正好是一天。玩家的每个动作都能在当天结算里看到后果：少收一次粮，晚上就有人跑。</p>
+  </div>
+
+  <h2>二、三个留住玩家的钩子</h2>
+  <ul>
+    <li><b>配方发现</b>：8 条配方，合成一次点亮一条。图鉴里的 ？？？就是玩家的下一步目标。</li>
+    <li><b>危机递进</b>：第 3 / 5 / 7 / 9 天各来一波，强度阶梯上升，逼玩家在「多屯粮」和「多造兵」之间做取舍。</li>
+    <li><b>明确终点</b>：守满 10 天即胜，一局约 6 分钟。有终点的循环才有人愿意再来一局。</li>
+  </ul>
+
+  <h2>三、机制与题材的映射</h2>
+  <table>
+    <tr><th>堆叠大陆</th><th>屯田</th></tr>
+    <tr><td>村民</td><td>村民（既是劳动力也是兵源）</td></tr>
+    <tr><td>食物</td><td>粮草（按人头每天消耗）</td></tr>
+    <tr><td>木头 / 石头</td><td>木材 / 石料</td></tr>
+    <tr><td>卖卡换钱</td><td>市集卖粮卖料</td></tr>
+    <tr><td>卡包</td><td>招募令 / 锦囊</td></tr>
+    <tr><td>怪物</td><td>山贼 → 黄巾 → 敌军</td></tr>
+  </table>
+
+  <h2>四、设计取舍</h2>
+  <p><b>1. 一次拖放只加工一次。</b>早期版本允许连锁合成，结果一拖就把一村人全变成兵，玩家还没反应过来就断粮了。改成单次结算后，每个动作都是玩家自己的决定。</p>
+  <p><b>2. 产出单独成堆。</b>产出如果留在原料堆里，村民、农田、粮草会叠成一张看不见的牌。分离之后「农民 + 农田」始终留在桌上，再拖一次就是再收一季粮。</p>
+  <p><b>3. 敌人优先打血最厚的。</b>随机打人会让村民毫无理由地暴毙，改成打前排后，玩家能通过「先造兵」主动保护劳动力，死亡变得可归因。</p>
+  <p><b>4. 人口即压力。</b>每个单位每天吃 1 粮草，所以扩军不是免费的：兵越多，粮越紧，田也越多。这条约束把「造兵」和「屯田」绑成了一个真实的取舍。</p>
+
+  <h2>五、数值骨架</h2>
+  <table>
+    <tr><th>单位</th><th>血</th><th>攻</th><th>定位</th></tr>
+    <tr><td>村民</td><td>2</td><td>0</td><td>劳动力，不能打</td></tr>
+    <tr><td>士兵</td><td>5</td><td>2</td><td>基础战力</td></tr>
+    <tr><td>枪兵 / 弓兵</td><td>6 / 5</td><td>3 / 3</td><td>进阶，弓兵先手</td></tr>
+    <tr><td>铁枪兵 / 强弓手</td><td>9 / 8</td><td>5 / 5</td><td>终局战力</td></tr>
+  </table>
+  <p style="font-size:13.5px">敌人按「4/2 → 7/3 → 12/5」递进，对应玩家第 3、7、9 天应有的兵力上限。</p>
+
+  <h2>六、迭代记录</h2>
+  <ul>
+    <li>v0.1 骨架：拖拽、堆叠、配方、金币</li>
+    <li>v0.2 加天循环、断粮、敌人波次、结算页</li>
+    <li>v0.3 修三处体验问题：连锁合成失控、产出堆叠不可见、敌人随机索敌</li>
+    <li>v0.4 加图鉴计数、数量角标、手机端适配</li>
+  </ul>
+
+  <h2>七、技术</h2>
+  <p>原生 HTML / CSS / JavaScript，零依赖，单页加载。卡牌用 DOM + Pointer Events 实现鼠标与触屏统一的拖拽，不引物理引擎以保证稳定性；全部数值集中在 <b>data.js</b>，调平衡不碰逻辑。</p>
+
+  <a class="back" href="index.html">← 回到游戏</a>
+  <div class="foot">这是一个用于展示机制设计能力的可玩原型。</div>
+</div>
+</body>
+</html>

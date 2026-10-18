@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>屯田 · 三国堆叠</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+  <header id="hud">
+    <div class="hud-left">
+      <div class="brand">屯田</div>
+      <div class="hud-item"><span class="hud-k">第</span><span id="dayNum">1</span><span class="hud-k">天</span></div>
+      <div class="hud-bar"><i id="dayBar"></i></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-item coins"><span class="hud-k">铜钱</span><span id="coins">0</span></div>
+      <div class="hud-item"><span class="hud-k">粮草</span><span id="foodCount">0</span></div>
+      <div class="hud-item"><span class="hud-k">图鉴</span><span id="codex">0/8</span></div>
+      <button class="btn small" id="buyRecruit">招募令 <b>10</b></button>
+      <button class="btn small" id="buyTactic">锦囊 <b>18</b></button>
+      <button class="btn ghost small" id="btnHelp">玩法</button>
+    </div>
+  </header>
+
+  <main id="board">
+    <div id="market">
+      <div class="m-title">市集</div>
+      <div class="m-sub">把资源拖到这里卖钱</div>
+    </div>
+    <div id="piles"></div>
+  </main>
+
+  <div id="toasts"></div>
+
+  <div id="overlay" class="show">
+    <div class="panel" id="panelStart">
+      <h1>屯 田</h1>
+      <p class="sub">用堆叠的方式，把一个小村子养成一方势力</p>
+      <ul class="rules">
+        <li><b>拖动</b>卡牌叠在一起，凑齐配方就会合成</li>
+        <li>每个<em>村民</em>每天要吃 1 份<em>粮草</em>，断粮会跑人</li>
+        <li>把资源拖进<em>市集</em>卖钱，用铜钱买卡包</li>
+        <li>守满 <b>10 天</b> 就赢，敌人会一波比一波强</li>
+      </ul>
+      <button class="btn big" id="btnStart">开 始 屯 田</button>
+      <div class="hint">一局约 6 分钟 · 手机也能玩 · <a href="about.html" style="color:#a8801d">设计说明</a></div>
+    </div>
+
+    <div class="panel hidden" id="panelHelp">
+      <h2>玩法</h2>
+      <div class="help-grid" id="helpGrid"></div>
+      <button class="btn" id="btnCloseHelp">知道了</button>
+    </div>
+
+    <div class="panel hidden" id="panelEnd">
+      <h2 id="endTitle">守住了</h2>
+      <p class="sub" id="endSub"></p>
+      <div class="stats" id="endStats"></div>
+      <button class="btn big" id="btnAgain">再 来 一 局</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
