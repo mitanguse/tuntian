@@ -119,6 +119,33 @@
 
   /* ---------------- 拖拽 ---------------- */
   let drag = null;
+  let holdTimer = null;
+  let holdFired = false;
+
+  function clearHold() {
+    if (holdTimer) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+  }
+
+  /* 从堆里拆出最上面一张，落到旁边空位——不然混堆了就再也分不开 */
+  function splitOne(pile) {
+    if (S.over || !S.running || pile.busy) return false;
+    if (pile.cards.length < 2) {
+      shake(pile);
+      return false;
+    }
+    const card = pile.cards.pop();
+    const spot = freeSpot(pile.x, pile.y);
+    const np = makePile([card], spot.x, spot.y);
+    S.piles.push(np);
+    S.pop.push(np.pid);
+    shake(pile);
+    render();
+    toast(`拆出 ${CARDS[card.id].name}`, 'good');
+    return true;
+  }
 
   boardEl.addEventListener('pointerdown', (e) => {
     if (S.over || !S.running) return;
@@ -139,13 +166,32 @@
       moved: false,
       x0: e.clientX,
       y0: e.clientY,
+      t0: performance.now(),
     };
     dragging = true;
     pileEl.classList.add('dragging');
     try { pileEl.setPointerCapture(e.pointerId); } catch (err) { /* 合成事件不支持捕获，忽略 */ }
+
+    // 长按拆一张（堆里至少 2 张才启动计时）
+    clearHold();
+    holdFired = false;
+    if (p.cards.length >= 2) {
+      holdTimer = setTimeout(() => {
+        holdTimer = null;
+        holdFired = true;
+        if (drag && drag.p === p) {
+          drag.el.classList.remove('dragging');
+          drag = null;
+          dragging = false;
+          marketEl.classList.remove('hot');
+        }
+        splitOne(p);
+      }, CONFIG.HOLD_MS);
+    }
   });
 
   boardEl.addEventListener('pointermove', (e) => {
+    if (holdTimer && drag && Math.abs(e.clientX - drag.x0) + Math.abs(e.clientY - drag.y0) > 8) clearHold();
     if (!drag) return;
     if (Math.abs(e.clientX - drag.x0) + Math.abs(e.clientY - drag.y0) > 3) drag.moved = true;
     const rect = boardEl.getBoundingClientRect();
@@ -159,13 +205,26 @@
   });
 
   boardEl.addEventListener('pointerup', (e) => {
+    clearHold();
+    if (holdFired) {
+      holdFired = false;
+      return;
+    }
     if (!drag) return;
     const from = drag.p;
     const el = drag.el;
+    const tap = performance.now() - drag.t0 < 400 &&
+      Math.abs(e.clientX - drag.x0) < 8 && Math.abs(e.clientY - drag.y0) < 8 && !drag.moved;
     dragging = false;
     drag = null;
     el.classList.remove('dragging');
     marketEl.classList.remove('hot');
+
+    // 轻点 = 拆一张（不分位置就能分开混堆）
+    if (tap) {
+      splitOne(from);
+      return;
+    }
 
     const mr = marketEl.getBoundingClientRect();
     const inMarket = e.clientX > mr.left && e.clientX < mr.right && e.clientY > mr.top && e.clientY < mr.bottom;
@@ -183,6 +242,8 @@
   });
 
   boardEl.addEventListener('pointercancel', () => {
+    clearHold();
+    holdFired = false;
     if (!drag) return;
     drag.el.classList.remove('dragging');
     drag = null;
