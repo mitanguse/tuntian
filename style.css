@@ -90,6 +90,28 @@ html, body {
 
 #piles { position: absolute; inset: 0; }
 
+/* 暂停遮罩：能看到牌桌，但不让误触 */
+#pauseMask {
+  position: absolute; inset: 0; z-index: 900;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(18, 11, 6, .62);
+  backdrop-filter: blur(2px);
+  animation: fadeIn .16s ease-out;
+}
+#pauseMask.hidden { display: none; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.pause-card {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 26px 38px 22px;
+  background: linear-gradient(170deg, #3a2a1a, #241811);
+  border: 2px solid var(--gold); border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.6);
+  text-align: center;
+}
+.pause-t { font-family: "Songti SC", "STSong", "SimSun", serif; font-size: 24px; color: var(--gold); letter-spacing: 4px; }
+.pause-s { font-size: 13px; color: #c9b48f; margin-bottom: 6px; }
+#btnPause.on { background: var(--gold); color: #2a1c10; border-color: var(--gold); }
+
 #market {
   position: absolute; right: 18px; bottom: 18px;
   width: 168px; height: 108px;
@@ -281,6 +303,7 @@ html, body {
 .stat .n { display: block; font-size: 22px; font-weight: 700; color: var(--red); font-family: "Songti SC", serif; }
 .stat .l { font-size: 11px; color: #8a7457; }
 
+/* 手机窄屏：顶栏放不下这么多东西，先把图鉴藏起来（玩法面板里还能看） */
 @media (max-width: 820px) {
   :root { --cw: 74px; --ch: 104px; }
   .brand { font-size: 20px; letter-spacing: 4px; }
@@ -293,4 +316,10 @@ html, body {
   .panel h1 { font-size: 32px; letter-spacing: 8px; }
   .help-grid { grid-template-columns: 1fr; }
   .stats { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 560px) {
+  #hudCodex { display: none; }
+  .hud-left, .hud-right { gap: 7px; }
+  .btn.small { padding: 5px 6px; font-size: 11px; }
 }
