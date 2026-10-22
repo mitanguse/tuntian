@@ -14,10 +14,12 @@
       <div class="brand">屯田</div>
       <div class="hud-item"><span class="hud-k">第</span><span id="dayNum">1</span><span class="hud-k">天</span></div>
       <div class="hud-bar"><i id="dayBar"></i></div>
+      <div class="hud-warn" id="hudWarn"><span class="hud-k" id="warnLabel">明日</span><span id="warnText">无警</span></div>
     </div>
     <div class="hud-right">
       <div class="hud-item coins"><span class="hud-k">铜钱</span><span id="coins">0</span></div>
       <div class="hud-item"><span class="hud-k">粮草</span><span id="foodCount">0</span></div>
+      <div class="hud-item" id="hudHands"><span class="hud-k">人手</span><span id="hands">3/3</span></div>
       <div class="hud-item" id="hudCodex"><span class="hud-k">图鉴</span><span id="codex">0/8</span></div>
       <button class="btn small" id="buyRecruit">招募令 <b>10</b></button>
       <button class="btn small" id="buyTactic">锦囊 <b>18</b></button>
@@ -53,8 +55,12 @@
         <li><em>村民</em> + <em>木材</em> 编成<em>民兵</em>，民兵再配<em>石料</em>练成<em>士兵</em></li>
         <li><b>轻点</b>牌堆能拆出最上面一张（长按也行），叠错了可以拆开</li>
         <li>每个<em>村民</em>每天要吃 1 份<em>粮草</em>，断粮会跑人</li>
+        <li><b>人手只有这么多</b>：村民下地、进林、伐木、采石之后当天就<b>疲</b>了，明天才恢复；
+          想让他当兵，就得少一个人干活</li>
         <li><em>贼寇</em>会自己爬到村民身边咬，看到就赶紧把兵拖上去打</li>
-        <li>把资源拖进<em>市集</em>卖钱、买卡包；守满 <b>10 天</b> 就赢，敌人一波比一波强</li>
+        <li>顶栏会<b>预告明天来什么、从哪边来</b>。把兵摆在那条路上，敌人就被挡住过不来——但挡路不等于打死，还得派兵去打掉它</li>
+        <li>每逢<b>偶数天</b>开头抽一张<b>事件卡</b>（旱灾 / 流民 / 招降 / 疫病），二选一，选完才继续走时间</li>
+        <li>把资源拖进<em>市集</em>卖钱、买卡包；守满 <b>10 天</b> 就赢，敌人一波比一波强，结算按人口、兵力、存粮、铜钱评 <b>S/A/B/C</b></li>
       </ul>
       <button class="btn big" id="btnStart">开 始 屯 田</button>
       <div class="hint">一局约 6 分钟 · 手机也能玩 · <a href="about.html" style="color:#a8801d">设计说明</a></div>
@@ -66,9 +72,20 @@
       <button class="btn" id="btnCloseHelp">知道了</button>
     </div>
 
+    <div class="panel hidden" id="panelEvent">
+      <div class="ev-tag">事件</div>
+      <h2 id="evName">旱灾</h2>
+      <p class="sub" id="evLine"></p>
+      <div class="ev-opts" id="evOpts"></div>
+    </div>
+
     <div class="panel hidden" id="panelEnd">
       <h2 id="endTitle">守住了</h2>
       <p class="sub" id="endSub"></p>
+      <div class="rank-wrap" id="rankWrap">
+        <div class="rank-letter" id="rankLetter">A</div>
+        <div class="rank-meta"><span id="rankScore">0</span><i>分</i><b id="rankWord">尚可</b></div>
+      </div>
       <div class="stats" id="endStats"></div>
       <button class="btn big" id="btnAgain">再 来 一 局</button>
     </div>
