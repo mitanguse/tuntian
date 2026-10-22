@@ -19,6 +19,8 @@
     over: false,
     discovered: new Set(),
     stats: { crafted: 0, killed: 0, soldCoins: 0 },
+    eventsSeen: new Set(),
+    eventOpen: false,
     uid: 1,
     pid: 1,
     pop: [],
@@ -29,7 +31,7 @@
 
   function makeCard(id) {
     const def = CARDS[id];
-    return { uid: S.uid++, id, hp: def.hp || 0 };
+    return { uid: S.uid++, id, hp: def.hp || 0, used: false };
   }
 
   function makePile(cards, x, y) {
@@ -60,10 +62,12 @@
     else if (def.sell) foot = `卖${def.sell}钱`;
     else if (def.kind === 'node') foot = '采集点';
     const cls = ['card', 'c-' + def.kind];
+    if (c.used) cls.push('tired');
     if (depth > 0) cls.push(depth === 1 ? 'back' : depth >= 5 ? 'back5' : 'back' + depth);
     const badgeHTML = badge ? `<div class="cnum">×${badge}</div>` : '';
+    const tiredHTML = c.used ? '<div class="ctired">疲</div>' : '';
     return `<div class="${cls.join(' ')}" data-uid="${c.uid}" style="z-index:${10 - depth}">
-      ${badgeHTML}
+      ${badgeHTML}${tiredHTML}
       <div class="cname">${def.name}</div>
       <div class="cglyph">${def.glyph}</div>
       <div class="cfoot">${foot}</div>
@@ -89,7 +93,8 @@
           return cardHTML(c, depth, badge);
         })
         .join('');
-      html += `<div class="pile${p.busy ? ' crafting' : ''}${(S.pop || []).includes(p.pid) ? ' pop' : ''}" data-pid="${p.pid}" style="left:${p.x}px;top:${p.y}px;z-index:${Math.round(p.y / 4) + 2}">
+      const foe = p.cards.some(isEnemy);
+      html += `<div class="pile${p.busy ? ' crafting' : ''}${(S.pop || []).includes(p.pid) ? ' pop' : ''}${foe ? ' foe' : ''}" data-pid="${p.pid}" style="left:${p.x}px;top:${p.y}px;z-index:${(foe ? 400 : 0) + Math.round(p.y / 4) + 2}">
         ${p.busy ? `<div class="craftTag">${p.craftLabel}中</div>` : ''}${inner}</div>`;
     }
     boardEl.innerHTML = html;
@@ -107,19 +112,66 @@
     updateHUD();
   }
 
+  /* 顶栏敌情：场上有敌就先报在在场的，没有了再预告明天 */
+  function warnInfo() {
+    const enemies = allCards().filter(isEnemy);
+    if (enemies.length) {
+      const bag = {};
+      enemies.forEach((c) => (bag[c.id] = (bag[c.id] || 0) + 1));
+      const txt = Object.entries(bag)
+        .map(([id, n]) => CARDS[id].name + (n > 1 ? '×' + n : ''))
+        .join('、');
+      return { text: txt, danger: true, live: true, label: '在场' };
+    }
+    // 往后看三天，太远的不报
+    let wave = null;
+    let days = 0;
+    for (let d = 1; d <= 3; d++) {
+      if (WAVES[S.day + d]) { wave = WAVES[S.day + d]; days = d; break; }
+    }
+    if (!wave) return { text: '无警', danger: false, live: false, label: '明日' };
+    const parts = Object.entries(wave)
+      .filter(([k]) => CARDS[k])
+      .map(([k, n]) => CARDS[k].name + (n > 1 ? '×' + n : ''));
+    const dir = DIRS[wave.dir] || DIRS.east;
+    return {
+      text: `${parts.join('、')} · ${dir.name}面`,
+      danger: true,
+      live: false,
+      label: days === 1 ? '明日' : `${days} 天后`,
+    };
+  }
+
   function updateHUD() {
     $('#coins').textContent = S.coins;
     $('#foodCount').textContent = countOf('food');
+    const vs = allCards().filter((c) => c.id === 'villager');
+    const freeHands = vs.filter((c) => !c.used).length;
+    const handsEl = $('#hands');
+    if (handsEl) handsEl.textContent = `${freeHands}/${vs.length}`;
+    const hudHands = $('#hudHands');
+    if (hudHands) hudHands.classList.toggle('warn', vs.length > 0 && freeHands === 0);
     $('#dayNum').textContent = Math.min(S.day, CONFIG.TOTAL_DAYS);
     $('#codex').textContent = `${S.discovered.size}/${RECIPES.length}`;
     const pct = Math.max(0, Math.min(100, (S.left / CONFIG.DAY_MS) * 100));
     $('#dayBar').style.width = pct + '%';
+    const warn = warnInfo();
+    const wEl = $('#warnText');
+    if (wEl && wEl.textContent !== warn.text) {
+      wEl.textContent = warn.text;
+      const label = $('#warnLabel');
+      if (label) label.textContent = warn.label;
+      const box = $('#hudWarn');
+      if (box) {
+        box.classList.toggle('danger', warn.danger);
+        box.classList.toggle('calm', !warn.danger);
+      }
+    }
     $('#buyRecruit').disabled = S.coins < PACKS.recruitPack.cost;
     $('#buyTactic').disabled = S.coins < PACKS.tacticPack.cost;
   }
 
-  /* ---------------- 拖拽 ---------------- */
-  let drag = null;
+  /* ---------------- 拖拽 ---------------- */  let drag = null;
   let holdTimer = null;
   let holdFired = false;
 
@@ -299,6 +351,16 @@
       toast(`一堆最多 ${CONFIG.PILE_MAX} 张`, 'bad');
       return;
     }
+    // 当天劳作过的村民不能再干活（当兵也得先有人手）
+    const r = matchRecipe(merged);
+    if (r && r.in && r.in.villager) {
+      const vs = merged.filter((c) => c.id === 'villager');
+      if (vs.length && vs.every((c) => c.used)) {
+        shake(to);
+        toast('村民今天干过活了，明天才能再动', 'bad');
+        return;
+      }
+    }
     to.cards = merged;
     S.piles = S.piles.filter((p) => p !== from);
     craft(to);
@@ -317,15 +379,68 @@
   // 玩家唯一的解法是把兵拖到它身上打。咬的节奏留出反应时间。
   const enemyTimers = new Map();
 
+  /* 路线正前方有没有兵：把兵的相对位置投到前进方向上 */
+  function blockerAhead(p, nx, ny) {
+    for (const q of S.piles) {
+      if (q === p) continue;
+      const bf = q.cards.find(isFighter);
+      if (!bf) continue;
+      const dx = q.x - p.x;
+      const dy = q.y - p.y;
+      const proj = dx * nx + dy * ny;            // 在前方多远
+      const perp = Math.abs(-dx * ny + dy * nx); // 离路线多偏
+      if (proj > -20 && proj < 118 && perp < 64) return q;
+    }
+    return null;
+  }
+
   function enemyMoveTick() {
     if (!S.running || S.over || S.paused || dragging) return;
     const now = performance.now();
+    const { w, h } = boardSize();
+    const cx = w * 0.5;
+    const cy = h * 0.5;
     let moved = false;
     const bites = [];
 
     for (const p of S.piles) {
-      if (!p.cards.some(isEnemy)) continue;
-      // 先找村民，场上没村民了才扑别的单位
+      const enemies = p.cards.filter(isEnemy);
+      if (!enemies.length) continue;
+      const st = enemyTimers.get(p.pid) || { moveAt: 0, biteAt: 0, blockAt: 0 };
+      enemyTimers.set(p.pid, st);
+
+      // 一、还没进村：沿来路一步步逼近村中心；正前方有兵就过不去
+      if (!p.arrived) {
+        // 每个敌人一条平行路线，不然几只一起走会叠成一团
+        const tx = cx + (p.vOff ? (p.off || 0) : 0);
+        const ty = cy + (p.vOff ? 0 : (p.off || 0));
+        const dx = tx - p.x;
+        const dy = ty - p.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 46) {
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const blocker = blockerAhead(p, nx, ny);
+          if (blocker) {
+            if (now >= st.blockAt) {
+              st.blockAt = now + 4000;
+              const bf = blocker.cards.find(isFighter);
+              toast(`${CARDS[bf.id].name}挡住了${CARDS[enemies[0].id].name}`, 'good');
+            }
+          } else if (now >= st.moveAt) {
+            const step = Math.min(CONFIG.ENEMY_STEP, dist - 40);
+            p.x += nx * step;
+            p.y += ny * step;
+            st.moveAt = now + CONFIG.ENEMY_MOVE_MS;
+            moved = true;
+          }
+          continue;
+        }
+        p.arrived = true;
+        toast(`${CARDS[enemies[0].id].name}进村了！`, 'bad');
+      }
+
+      // 二、进村之后：先找村民，场上没村民了才扑别的单位
       let pool = S.piles.filter((q) => q !== p && q.cards.some((c) => c.id === 'villager'));
       if (!pool.length) pool = S.piles.filter((q) => q !== p && q.cards.some(isUnit));
       if (!pool.length) continue;
@@ -338,7 +453,6 @@
       }
       if (!tgt) continue;
 
-      const st = enemyTimers.get(p.pid) || { moveAt: 0, biteAt: 0 };
       if (bestD > CONFIG.ENEMY_RANGE) {
         if (now >= st.moveAt) {
           const step = Math.min(CONFIG.ENEMY_STEP, Math.max(4, bestD - CONFIG.ENEMY_RANGE));
@@ -476,15 +590,41 @@
       [0, 96], [0, -96], [120, 0], [-120, 0],
       [120, 96], [-120, 96], [120, -96], [-120, -96],
       [0, 160], [0, -160], [190, 0], [-190, 0],
+      [190, 110], [-190, 110], [190, -110], [-190, -110],
+      [90, 190], [-90, 190], [90, -190], [-90, -190],
+      [270, 0], [-270, 0], [270, 120], [-270, 120], [0, 260], [0, -260],
     ];
+    // 先试预设偏移，再按环形逐圈扩大搜索，避免新牌直接压在旧牌上
+    for (let ring = 1; ring <= 4; ring++) {
+      for (let a = 0; a < 12; a++) {
+        const ang = (Math.PI * 2 * a) / 12;
+        cands.push([Math.cos(ang) * 90 * ring, Math.sin(ang) * 110 * ring]);
+      }
+    }
     for (const [dx, dy] of cands) {
       const nx = clampX(x + dx);
       const ny = clampY(y + dy);
-      if (!S.piles.some((p) => Math.abs(p.x - nx) < 80 && Math.abs(p.y - ny) < 104)) {
+      if (!S.piles.some((p) => Math.abs(p.x - nx) < 96 && Math.abs(p.y - ny) < 134)) {
         return { x: nx, y: ny };
       }
     }
-    return { x: clampX(x + 40), y: clampY(y + 40) };
+    // 处处都挤：退而求其次，挑“离最近的牌堆最远”的那个点，总比直接叠上去强
+    let best = null;
+    let bestD = -1;
+    for (const [dx, dy] of cands) {
+      const nx = clampX(x + dx);
+      const ny = clampY(y + dy);
+      let dmin = 1e9;
+      for (const p of S.piles) {
+        const d = Math.hypot(p.x - nx, p.y - ny);
+        if (d < dmin) dmin = d;
+      }
+      if (dmin > bestD) {
+        bestD = dmin;
+        best = { x: nx, y: ny };
+      }
+    }
+    return best || { x: clampX(x + 40), y: clampY(y + 40) };
   }
 
   /* 每次拖放只加工一次，产出单独成堆，原料留下的部分不动 */
@@ -506,6 +646,15 @@
         for (const [id, n] of Object.entries(r.keep)) {
           for (let i = 0; i < n; i++) pile.cards.push(makeCard(id));
         }
+      }
+      // 劳动类配方：干活的人单独站一边（看得见、数得清），当天“疲”，次日恢复
+      if (r.labor) {
+        const wSpot = freeSpot(pile.x + 40, pile.y + 40);
+        const worker = makeCard('villager');
+        worker.used = true;
+        const wp = makePile([worker], wSpot.x, wSpot.y);
+        S.piles.push(wp);
+        S.pop.push(wp.pid);
       }
       const outCards = [];
       // 森林这类配方是随机的：alt 里每个产物等概率抽一个
@@ -682,7 +831,10 @@
 
     if (checkLose()) return;
 
-    // 3. 进入下一天
+    // 3. 进入下一天（人手恢复）
+    allCards().forEach((c) => {
+      c.used = false;
+    });
     S.day++;
     if (S.day > CONFIG.TOTAL_DAYS) {
       win();
@@ -691,12 +843,16 @@
     const wave = WAVES[S.day];
     if (wave) {
       spawnWave(wave);
-      toast(`第 ${S.day} 天：敌袭！`, 'bad');
+      const dir = DIRS[wave.dir] || DIRS.east;
+      toast(`第 ${S.day} 天：敌袭自${dir.name}面！`, 'bad');
     } else {
       toast(`第 ${S.day} 天`, '');
     }
     S.left = CONFIG.DAY_MS;
     render();
+
+    // 每逢偶数天开头抽一张事件卡，选完才继续走时间
+    if (S.day % 2 === 0 && S.day <= CONFIG.TOTAL_DAYS) openEvent();
   }
 
   function removeCard(card) {
@@ -711,10 +867,24 @@
 
   function spawnWave(wave) {
     const { w, h } = boardSize();
-    for (const [id, n] of Object.entries(wave)) {
-      for (let i = 0; i < n; i++) {
-        const spot = freeSpot(Math.min(w - 120, w * 0.66), 60 + Math.random() * (h - 220));
-        S.piles.push(makePile([makeCard(id)], spot.x, spot.y));
+    const dir = DIRS[wave.dir] || DIRS.east;
+    const ex = w * dir.fx;
+    const ey = h * dir.fy;
+    const ids = Object.keys(wave).filter((k) => CARDS[k]);
+    const total = ids.reduce((s, id) => s + wave[id], 0);
+    const vertical = dir.fy < 0.2 || dir.fy > 0.8; // 从南北来就横向排开
+    const cw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cw')) || 94;
+    const gap = cw + 6;
+    let i = 0;
+    for (const id of ids) {
+      for (let k = 0; k < wave[id]; k++) {
+        // 成队进场：沿路边排开，别叠成一堆看不清几只
+        const off = (i++ - (total - 1) / 2) * gap;
+        const x = ex + (vertical ? off : 0) - 47;
+        const y = ey + (vertical ? 0 : off) - 66;
+        S.piles.push(Object.assign(makePile([makeCard(id)],
+          Math.max(6, Math.min(w - 104, x)),
+          Math.max(6, Math.min(h - 140, y))), { off, vOff: vertical }));
       }
     }
   }
@@ -740,19 +910,140 @@
     showEnd(true);
   }
 
+  /* ---------------- 事件卡 ---------------- */
+  function canPay(cost) {
+    if (!cost) return true;
+    if (cost.coins && S.coins < cost.coins) return false;
+    if (cost.food && countOf('food') < cost.food) return false;
+    return true;
+  }
+
+  function effectWords(fx) {
+    if (!fx) return '不损一人一粮';
+    if (fx.foodHalf) return '粮草折半';
+    if (fx.add) return `+${fx.n || 1} ${CARDS[fx.add].name}`;
+    if (fx.coins) return `+${fx.coins} 铜钱`;
+    if (fx.hurtRandom) return '一名单位受伤';
+    return '';
+  }
+
+  function removeFood(n) {
+    const foods = allCards().filter((c) => c.id === 'food');
+    for (let i = 0; i < n && i < foods.length; i++) removeCard(foods[i]);
+  }
+
+  function openEvent() {
+    if (S.over) return;
+    let pool = EVENTS.filter((e) => !S.eventsSeen.has(e.id));
+    if (!pool.length) {
+      S.eventsSeen.clear();
+      pool = EVENTS.slice();
+    }
+    const ev = pool[Math.floor(Math.random() * pool.length)];
+    S.eventsSeen.add(ev.id);
+    S.eventOpen = true;
+    S.paused = true;
+    $('#evName').textContent = ev.name;
+    $('#evLine').textContent = ev.line;
+    const box = $('#evOpts');
+    box.innerHTML = '';
+    ev.options.forEach((opt) => {
+      const btn = document.createElement('button');
+      btn.className = 'ev-opt';
+      const costTxt = [];
+      if (opt.cost && opt.cost.coins) costTxt.push(`花 ${opt.cost.coins} 铜钱`);
+      if (opt.cost && opt.cost.food) costTxt.push(`耗 ${opt.cost.food} 粮草`);
+      if (!canPay(opt.cost)) btn.classList.add('cant');
+      btn.innerHTML = `<b>${opt.text}</b><span>${costTxt.length ? costTxt.join('，') + ' · ' : ''}${effectWords(opt.effect)}</span>`;
+      btn.addEventListener('click', () => chooseEvent(opt));
+      box.appendChild(btn);
+    });
+    $('#panelStart').classList.add('hidden');
+    $('#panelEnd').classList.add('hidden');
+    $('#panelHelp').classList.add('hidden');
+    $('#panelEvent').classList.remove('hidden');
+    $('#overlay').classList.add('show');
+  }
+
+  function chooseEvent(opt) {
+    if (!S.eventOpen) return;
+    if (!canPay(opt.cost)) {
+      toast('凑不出这份本钱', 'bad');
+      return;
+    }
+    if (opt.cost) {
+      if (opt.cost.coins) S.coins -= opt.cost.coins;
+      if (opt.cost.food) removeFood(opt.cost.food);
+    }
+    const fx = opt.effect || {};
+    if (fx.foodHalf) {
+      const foods = allCards().filter((c) => c.id === 'food');
+      const cut = Math.floor(foods.length / 2);
+      for (let i = 0; i < cut; i++) removeCard(foods[i]);
+    }
+    if (fx.add) {
+      const { w, h } = boardSize();
+      for (let i = 0; i < (fx.n || 1); i++) {
+        const spot = freeSpot(w * 0.5 - 47, h * 0.5 - 66);
+        const np = makePile([makeCard(fx.add)], spot.x, spot.y);
+        S.piles.push(np);
+        S.pop.push(np.pid);
+      }
+    }
+    if (fx.coins) S.coins += fx.coins;
+    if (fx.hurtRandom) {
+      const units = allCards().filter(isUnit);
+      if (units.length) {
+        const v = units[Math.floor(Math.random() * units.length)];
+        v.hp -= fx.hurtRandom;
+        if (v.hp <= 0) removeCard(v);
+      }
+    }
+    S.eventOpen = false;
+    $('#panelEvent').classList.add('hidden');
+    $('#overlay').classList.remove('show');
+    S.paused = false;
+    lastTs = performance.now();
+    toast(opt.result, 'good');
+    render();
+    checkLose();
+  }
+
+  /* ---------------- 结算评级 ---------------- */
+  function rankInfo() {
+    const units = allCards().filter(isUnit);
+    const pop = units.length;
+    const atk = units.reduce((s, c) => s + (CARDS[c.id].atk || 0), 0);
+    const hp = units.reduce((s, c) => s + Math.max(c.hp, 0), 0);
+    const food = countOf('food');
+    const score = Math.round(pop * 4 + atk * 5 + hp + food * 2 + S.coins * 0.5);
+    let rank = 'C';
+    let word = '勉强度日';
+    if (score >= 120) { rank = 'S'; word = '一方势力'; }
+    else if (score >= 85) { rank = 'A'; word = '站稳了脚'; }
+    else if (score >= 55) { rank = 'B'; word = '勉强撑住'; }
+    return { pop, atk, hp, food, score, rank, word };
+  }
+
   /* ---------------- 结算界面 ---------------- */
   function showEnd(won) {
     $('#endTitle').textContent = won ? '守 住 了' : '村 子 没 了';
     $('#endSub').textContent = won
       ? `你在乱世里撑过了 ${CONFIG.TOTAL_DAYS} 天`
       : `你在第 ${Math.min(S.day, CONFIG.TOTAL_DAYS)} 天失去了最后一个人`;
+    const rk = rankInfo();
+    const letterEl = $('#rankLetter');
+    letterEl.textContent = rk.rank;
+    letterEl.classList.toggle('s', rk.rank === 'S');
+    $('#rankScore').textContent = rk.score;
+    $('#rankWord').textContent = rk.word;
     $('#endStats').innerHTML = `
       <div class="stat"><span class="n">${Math.min(S.day, CONFIG.TOTAL_DAYS)}</span><span class="l">存活天数</span></div>
-      <div class="stat"><span class="n">${S.stats.crafted}</span><span class="l">合成次数</span></div>
-      <div class="stat"><span class="n">${S.stats.killed}</span><span class="l">斩敌</span></div>
-      <div class="stat"><span class="n">${S.discovered.size}/${RECIPES.length}</span><span class="l">图鉴</span></div>
-      <div class="stat"><span class="n">${S.coins}</span><span class="l">结余铜钱</span></div>
-      <div class="stat"><span class="n">${S.stats.soldCoins}</span><span class="l">卖货收入</span></div>`;
+      <div class="stat"><span class="n">${rk.pop}</span><span class="l">人口</span></div>
+      <div class="stat"><span class="n">${rk.atk}</span><span class="l">总战力</span></div>
+      <div class="stat"><span class="n">${rk.food}</span><span class="l">存粮</span></div>
+      <div class="stat"><span class="n">${S.coins}</span><span class="l">铜钱</span></div>
+      <div class="stat"><span class="n">${S.stats.killed}</span><span class="l">斩敌</span></div>`;
     $('#panelStart').classList.add('hidden');
     $('#panelHelp').classList.add('hidden');
     $('#panelEnd').classList.remove('hidden');
@@ -797,6 +1088,9 @@
     $('#btnPause').classList.remove('on');
     S.discovered = new Set();
     enemyTimers.clear();
+    S.eventsSeen = new Set();
+    S.eventOpen = false;
+    $('#panelEvent').classList.add('hidden');
     S.stats = { crafted: 0, killed: 0, soldCoins: 0 };
     S.uid = 1;
     S.pid = 1;
@@ -868,6 +1162,13 @@
     sell: doSell,
     merge: tryMerge,
     craft,
+    event: openEvent,
+    pickEvent: (i) => {
+      const btn = document.querySelectorAll('#evOpts .ev-opt')[i];
+      if (btn) btn.click();
+    },
+    rank: rankInfo,
+    spawn: (day) => spawnWave(WAVES[day] || { bandit: 1, dir: 'east' }),
   };
 
   render();
