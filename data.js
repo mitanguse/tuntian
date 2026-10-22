@@ -46,11 +46,11 @@ const CARDS = {
 
 /* 配方：in 消耗，keep 保留在原料堆里，out 产出到新的一堆 */
 const RECIPES = [
-  { id: 'chop',  in: { villager: 1, tree: 1 },                  keep: { villager: 1 },              out: { wood: 2 },        label: '伐木' },
-  { id: 'quarry',in: { villager: 1, stone: 1 },                 keep: { villager: 1 },              out: { stoneblock: 2 },  label: '采石' },
-  { id: 'farm',  in: { villager: 1, farm: 1 },                  keep: { villager: 1, farm: 1 },     out: { food: 3 },        label: '屯田' },
+  { id: 'chop',  in: { villager: 1, tree: 1 },                  keep: {},                            out: { wood: 2 },        label: '伐木', labor: true },
+  { id: 'quarry',in: { villager: 1, stone: 1 },                 keep: {},                            out: { stoneblock: 2 },  label: '采石', labor: true },
+  { id: 'farm',  in: { villager: 1, farm: 1 },                  keep: { farm: 1 },                   out: { food: 3 },        label: '屯田', labor: true },
   { id: 'militia', in: { villager: 1, wood: 1 },     out: { militia: 1 },     label: '编民兵' },
-  { id: 'forest', in: { villager: 1, forest: 1 },    keep: { villager: 1, forest: 1 },   out: { tree: 2, stone: 2 }, label: '进林' },
+  { id: 'forest', in: { villager: 1, forest: 1 },    keep: { forest: 1 },                 out: { tree: 2, stone: 2 }, label: '进林', labor: true },
   { id: 'splitwood', in: { tree: 2 },               out: { wood: 2 },        label: '劈木' },
   { id: 'splitstone', in: { stone: 2 },             out: { stoneblock: 2 },  label: '碎石' },
   { id: 'recruit',in:{ villager: 1, wood: 1, stoneblock: 1 },                                       out: { soldier: 1 },     label: '募兵' },
@@ -73,12 +73,52 @@ const PACKS = {
   },
 };
 
-/* 敌人波次：第几天 -> 来什么 */
-const WAVES = {
-  3: { bandit: 1 },
-  5: { bandit: 2 },
-  7: { yellow: 1 },
-  9: { yellow: 1, bandit: 1 },
+/* 敌人从哪个方向来：入口在牌桌边上，目标村中心 */
+const DIRS = {
+  east:  { name: '东', fx: 0.93, fy: 0.50 },
+  south: { name: '南', fx: 0.50, fy: 0.92 },
+  west:  { name: '西', fx: 0.07, fy: 0.50 },
+  north: { name: '北', fx: 0.50, fy: 0.08 },
 };
 
-if (typeof module !== 'undefined') module.exports = { CONFIG, CARDS, RECIPES, PACKS, WAVES };
+/* 敌人波次：第几天 -> 来什么、从哪边来 */
+const WAVES = {
+  3: { bandit: 1, dir: 'east' },
+  5: { bandit: 2, dir: 'south' },
+  7: { yellow: 1, dir: 'north' },
+  9: { yellow: 1, bandit: 1, dir: 'east' },
+};
+
+/* 事件卡：每逢偶数天开头二选一，选完才继续走时间 */
+const EVENTS = [
+  {
+    id: 'drought', name: '旱灾', line: '日头毒了半个月，田里裂开一指宽的缝。',
+    options: [
+      { text: '挖井引水', cost: { coins: 6 }, result: '水引过来了，今年的收成保住了。' },
+      { text: '硬扛过去', effect: { foodHalf: true }, result: '粮草折了一半，村口有人开始啃树皮。' },
+    ],
+  },
+  {
+    id: 'refugee', name: '流民', line: '十几户流民跪在村口，大人孩子都瘦得脱了形。',
+    options: [
+      { text: '收留他们', cost: { food: 4 }, effect: { add: 'villager', n: 1 }, result: '多了一口人，也多了一双能下地的手。' },
+      { text: '遣散出村', effect: { coins: 2 }, result: '他们留下几文买路钱，往南边去了。' },
+    ],
+  },
+  {
+    id: 'surrender', name: '招降', line: '一伙山贼在村外喊话，说愿意放下刀跟你干。',
+    options: [
+      { text: '收编入伙', cost: { coins: 8 }, effect: { add: 'militia', n: 1 }, result: '山贼换了旗号，成了你手下的民兵。' },
+      { text: '斩首示众', effect: { coins: 4 }, result: '人头挂上村口老槐树，缴获四文铜钱。' },
+    ],
+  },
+  {
+    id: 'plague', name: '疫病', line: '营里有人发起热来，一夜之间倒下三个。',
+    options: [
+      { text: '请医买药', cost: { coins: 8 }, result: '药灌下去了，人挺过来了。' },
+      { text: '封营隔离', effect: { hurtRandom: 1 }, result: '病是压住了，可有人落下了病根。' },
+    ],
+  },
+];
+
+if (typeof module !== 'undefined') module.exports = { CONFIG, CARDS, RECIPES, PACKS, WAVES, DIRS, EVENTS };
