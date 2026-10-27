@@ -29,7 +29,7 @@ const CARDS = {
 
   /* ---------- 资源点（森林采不完，其余采完消失） ---------- */
   tree:  { name: '树木', glyph: '树', kind: 'node', tip: '民去砍成木材，或两张树木劈成木材' },
-  forest:{ name: '森林', glyph: '森', kind: 'node', tip: '派村民去，采出树木和石头，森林不会消失' },
+  forest:{ name: '森林', glyph: '森', kind: 'node', tip: '派村民去，随机采出树木或石头，森林不会消失' },
   stone: { name: '石头', glyph: '岩', kind: 'node', tip: '民去采成石料，或两张石头碎成石料' },
   farm:  { name: '农田', glyph: '田', kind: 'node', tip: '派村民去收，得粮草' },
 
@@ -50,7 +50,7 @@ const RECIPES = [
   { id: 'quarry',in: { villager: 1, stone: 1 },                 keep: {},                            out: { stoneblock: 2 },  label: '采石', labor: true },
   { id: 'farm',  in: { villager: 1, farm: 1 },                  keep: { farm: 1 },                   out: { food: 3 },        label: '屯田', labor: true },
   { id: 'militia', in: { villager: 1, wood: 1 },     out: { militia: 1 },     label: '编民兵' },
-  { id: 'forest', in: { villager: 1, forest: 1 },    keep: { forest: 1 },                 out: { tree: 2, stone: 2 }, label: '进林', labor: true },
+  { id: 'forest', in: { villager: 1, forest: 1 },    keep: { forest: 1 },                 alt: [{ tree: 1 }, { stone: 1 }], label: '进林', labor: true },
   { id: 'splitwood', in: { tree: 2 },               out: { wood: 2 },        label: '劈木' },
   { id: 'splitstone', in: { stone: 2 },             out: { stoneblock: 2 },  label: '碎石' },
   { id: 'recruit',in:{ villager: 1, wood: 1, stoneblock: 1 },                                       out: { soldier: 1 },     label: '募兵' },
