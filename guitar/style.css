@@ -123,6 +123,39 @@ input[type=range]{width:100%;accent-color:var(--wood2)}
 .btn.main{background:var(--wood);border-color:var(--wood);color:#1a1208;font-weight:700}
 .btn:active{transform:scale(.98)}
 
+/* ===== 乐理 ===== */
+.thy-toc{display:flex;gap:6px;overflow-x:auto;padding:0 0 12px;scrollbar-width:none}
+.thy-toc::-webkit-scrollbar{display:none}
+.thy-chip{
+  flex:0 0 auto;background:var(--panel);border:1px solid var(--line);color:var(--dim);
+  padding:7px 12px;border-radius:16px;font-size:12.5px;cursor:pointer;font-family:inherit
+}
+.thy-chip:active{border-color:var(--wood2);color:var(--wood2)}
+.thy-list{display:flex;flex-direction:column;gap:10px}
+.thy-card{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  overflow:hidden;scroll-margin-top:12px
+}
+.thy-card[open]{border-color:#4a3a2c}
+.thy-card summary{
+  list-style:none;cursor:pointer;padding:13px 15px;font-size:15px;font-weight:700;
+  display:flex;align-items:center;gap:9px
+}
+.thy-card summary::-webkit-details-marker{display:none}
+.thy-card summary .ic{font-size:16px}
+.thy-card summary::after{content:'+';margin-left:auto;color:var(--dim);font-weight:400}
+.thy-card[open] summary::after{content:'–';color:var(--wood2)}
+.thy-body{padding:0 15px 15px;font-size:13.5px;line-height:1.85;color:#d8ccbb}
+.thy-body p{margin:8px 0}
+.thy-body ul{margin:8px 0;padding-left:20px}
+.thy-body li{margin:4px 0}
+.thy-body b{color:var(--wood2);font-weight:600}
+.thy-body i{color:var(--dim)}
+table.thy{width:100%;border-collapse:collapse;margin:10px 0;font-size:12.5px}
+table.thy th,table.thy td{border-bottom:1px solid #2f251d;padding:6px 6px;text-align:left}
+table.thy th{color:var(--wood2);font-weight:600}
+table.thy tr:first-child td,table.thy tr:first-child th{border-top:1px solid #2f251d}
+
 /* ===== 进度 ===== */
 .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}

@@ -299,4 +299,180 @@ const LEVELS = [
   { id: 5, name: '完整曲目', desc: '带 F 的歌，扫弦节奏型', req: '解锁：完成 1 首 L3 曲子 70%' },
 ];
 
-window.GT_DATA = { TUNING, OPEN_MIDI, CHORDS, STARTER_CHORDS, EASY_ORDER, MELODIES, SONGBOOK, LEVELS, parseJianpu, midiToFret, jianpuToMidi };
+/* ---------- 乐理速查 ---------- */
+const THEORY = [
+  {
+    id: 'strings', icon: '🎸', title: '六根弦与音名',
+    html: `
+      <table class="thy">
+        <tr><th>弦</th><th>音名</th><th>频率</th><th>粗细</th></tr>
+        <tr><td>6 弦</td><td>E2</td><td>82.41 Hz</td><td>最粗（低音 E）</td></tr>
+        <tr><td>5 弦</td><td>A2</td><td>110.00 Hz</td><td></td></tr>
+        <tr><td>4 弦</td><td>D3</td><td>146.83 Hz</td><td></td></tr>
+        <tr><td>3 弦</td><td>G3</td><td>196.00 Hz</td><td></td></tr>
+        <tr><td>2 弦</td><td>B3</td><td>246.94 Hz</td><td></td></tr>
+        <tr><td>1 弦</td><td>E4</td><td>329.63 Hz</td><td>最细（高音 E）</td></tr>
+      </table>
+      <p>从粗到细记成 <b>E A D G B E</b>。英文口诀：<i>Eddie Ate Dynamite, Good Bye Eddie</i>。</p>
+      <p>为什么这么调？因为这样最常用的几个和弦（C、G、Am、Em、D、A、E）指法都落在前三品，手不用跑。</p>`,
+  },
+  {
+    id: 'names', icon: '🎵', title: '音名与唱名',
+    html: `
+      <p>同一个音有两套叫法，别被绕晕：</p>
+      <table class="thy">
+        <tr><th>音名</th><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>A</td><td>B</td></tr>
+        <tr><th>唱名</th><td>do</td><td>re</td><td>mi</td><td>fa</td><td>sol</td><td>la</td><td>si</td></tr>
+        <tr><th>简谱</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td></tr>
+      </table>
+      <p>音名是固定的（C 就是 C），唱名随调移动（C 调里 1=C，G 调里 1=G）。看谱时先确认「1 等于哪个音」。</p>`,
+  },
+  {
+    id: 'semitone', icon: '📏', title: '半音与全音',
+    html: `
+      <p>吉他上最简单的一条规律：<b>每往琴身方向按一品，升高一个半音；退一品，降低一个半音。</b></p>
+      <ul>
+        <li>相邻两品 = 半音</li>
+        <li>隔一品 = 全音</li>
+        <li>12 个半音 = 一个八度，正好回到同名音（第 12 品是空弦的高八度）</li>
+      </ul>
+      <p>特例：<b>E–F 和 B–C 之间本身只差半音</b>，所以 E 和 B 后面没有升号音。这也是为什么钢琴上黑键是两个一组、三个一组。</p>`,
+  },
+  {
+    id: 'scale', icon: '🪜', title: '大调音阶（为什么 C 调最好按）',
+    html: `
+      <p>大调音阶的公式是固定的：<b>全 全 半 全 全 全 半</b>（全=2 品，半=1 品）。</p>
+      <p>从 C 开始套这个公式：C → D → E → F → G → A → B → C，正好全是白键，所以 <b>C 大调没有升降号</b>，是最好按的调，新手都从它开始。</p>
+      <p>换成从 G 开始套，第七个音会变成 F#，这就是 G 调要升 F 的原因（见下一节调号）。</p>
+      <p>在吉他上弹一遍：从 5 弦 3 品（C）开始，按 3-5-7 品、再上到 4 弦 2-3-5 品、3 弦 2-4-5 品，就是 C 大调音阶。</p>`,
+  },
+  {
+    id: 'key', icon: '🔑', title: '调号速查',
+    html: `
+      <table class="thy">
+        <tr><th>调</th><th>升降号</th><th>备注</th></tr>
+        <tr><td>C</td><td>无</td><td>最常用，全是自然音</td></tr>
+        <tr><td>G</td><td>F#</td><td>吉他上很好按，常用</td></tr>
+        <tr><td>D</td><td>F# C#</td><td></td></tr>
+        <tr><td>A</td><td>F# C# G#</td><td></td></tr>
+        <tr><td>E</td><td>F# C# G# D#</td><td></td></tr>
+        <tr><td>F</td><td>Bb（降一个）</td><td>要按大横按 F，新手先躲开</td></tr>
+      </table>
+      <p>规律：升号按 F-C-G-D-A-E-B 的顺序加，降号反过来。不用背，看谱时认开头标的升降号就行。</p>`,
+  },
+  {
+    id: 'interval', icon: '📐', title: '音程：几个品＝什么关系',
+    html: `
+      <table class="thy">
+        <tr><th>音程</th><th>品数</th><th>听感</th></tr>
+        <tr><td>小二度</td><td>1 品</td><td>最刺，紧张</td></tr>
+        <tr><td>大二度</td><td>2 品</td><td>相邻音，如 do-re</td></tr>
+        <tr><td>小三度</td><td>3 品</td><td>忧郁（小三和弦的骨架）</td></tr>
+        <tr><td>大三度</td><td>4 品</td><td>明亮（大三和弦的骨架）</td></tr>
+        <tr><td>纯四度</td><td>5 品</td><td>开阔</td></tr>
+        <tr><td>纯五度</td><td>7 品</td><td>空、稳，强力和弦就是它</td></tr>
+        <tr><td>大六度</td><td>9 品</td><td>柔和</td></tr>
+        <tr><td>大七度</td><td>11 品</td><td>悬着，想解决</td></tr>
+        <tr><td>八度</td><td>12 品</td><td>同一个音的高八度</td></tr>
+      </table>
+      <p>这是同一根弦上的算法。跨弦时因为调弦不是纯四度（3 弦到 2 弦是大三度），要减一品，先记住同弦的就行。</p>`,
+  },
+  {
+    id: 'chord', icon: '🎹', title: '和弦到底是什么',
+    html: `
+      <p><b>三个或以上的音同时响，就是和弦。</b>最基础的是三和弦：根音 + 三音 + 五音。</p>
+      <ul>
+        <li>C 和弦 = C + E + G</li>
+        <li>Am 和弦 = A + C + E</li>
+        <li>Em 和弦 = E + G + B</li>
+      </ul>
+      <p>决定「大还是小」的是中间那个三音：</p>
+      <ul>
+        <li><b>大三和弦</b>（C、G、D、A、E）：根音到三音是大三度（4 品），听着明亮</li>
+        <li><b>小三和弦</b>（Am、Em、Dm）：根音到三音是小三度（3 品），听着忧郁</li>
+      </ul>
+      <p>所以 C 和 Cm 只差一个音：把 E 降成 Eb。在吉他上就是那个音退一品。</p>
+      <p>和弦图怎么读：竖线是六根弦（左粗右细），横线是品，圆点是要按的位置，× 是不弹，○ 是空弦。</p>`,
+  },
+  {
+    id: 'numeral', icon: '🔢', title: '级数与万能四和弦',
+    html: `
+      <p>把 C 大调的音排成级数：</p>
+      <table class="thy">
+        <tr><th>级数</th><td>I</td><td>ii</td><td>iii</td><td>IV</td><td>V</td><td>vi</td></tr>
+        <tr><th>和弦</th><td>C</td><td>Dm</td><td>Em</td><td>F</td><td>G</td><td>Am</td></tr>
+      </table>
+      <p>大写是大三和弦，小写是小三和弦。流行歌里最常见的进行是 <b>I–V–vi–IV</b>，也就是 <b>C–G–Am–F</b>。</p>
+      <p>这一个进行能套几百首歌（《童年》《平凡之路》《真的爱你》都是它）。把它练到能闭眼换，等于打通一大半弹唱。</p>
+      <p>另外一个常见的是 <b>vi–IV–I–V</b>（Am–F–C–G），情绪更柔，慢歌多用。</p>`,
+  },
+  {
+    id: 'rhythm', icon: '🥁', title: '拍号与音符时值',
+    html: `
+      <p><b>4/4</b> 读作「四四拍」：每小节 4 拍，以四分音符为一拍。绝大多数流行歌都是 4/4。</p>
+      <table class="thy">
+        <tr><th>音符</th><th>拍数</th><th>怎么数</th></tr>
+        <tr><td>全音符</td><td>4 拍</td><td>1 - 2 - 3 - 4</td></tr>
+        <tr><td>二分音符</td><td>2 拍</td><td>1 - 2</td></tr>
+        <tr><td>四分音符</td><td>1 拍</td><td>1</td></tr>
+        <tr><td>八分音符</td><td>半拍</td><td>1 和 2 和（「和」是半拍）</td></tr>
+        <tr><td>十六分音符</td><td>1/4 拍</td><td>1 e 和 a</td></tr>
+      </table>
+      <p><b>附点</b>：音符右边加个点，时值 ×1.5。附点四分音符 = 1.5 拍。</p>
+      <p>数拍子的时候嘴上要出声（1 2 3 4），手上动作跟嘴走，别跟着感觉走。</p>`,
+  },
+  {
+    id: 'right', icon: '✋', title: '右手：分解与扫弦',
+    html: `
+      <p><b>分解和弦（指弹）</b>：拇指管 6、5、4 弦（低音），食指管 3 弦，中指管 2 弦，无名指管 1 弦。最常见的型是 5-3-2-3-1-3-2-3。</p>
+      <p><b>扫弦</b>：靠手腕转，不是靠手臂甩。</p>
+      <ul>
+        <li>下扫：食指指甲背面（或拇指外侧）从 6 弦划到 1 弦</li>
+        <li>上扫：拇指肚从 1 弦划回 6 弦，只扫上面两三根就够</li>
+        <li>新手第一个型：<b>下　下上　上下上</b>（一拍一下，第三拍拆成两下）</li>
+      </ul>
+      <p>扫弦声音糊成一团，通常是手腕太僵或者拨片/指甲吃弦太深。轻一点、快一点反而清楚。</p>`,
+  },
+  {
+    id: 'left', icon: '👈', title: '左手：按弦要领',
+    html: `
+      <ul>
+        <li><b>按在品柱后面 2–3 毫米</b>，不要正压品丝上，也不要缩在品格中间（那是杂音和闷音的主要来源）</li>
+        <li><b>指尖垂直</b>，指关节立起来，别让指腹躺到隔壁弦上</li>
+        <li><b>拇指贴在琴颈后面中间</b>，不要整个握上来，也不要外翻</li>
+        <li><b>力度刚好不出杂音就行</b>，按太狠音会偏高，手也更快累</li>
+        <li>手腕不要塌，前臂和琴颈大致平行</li>
+      </ul>
+      <p>判断有没有按实：单弦拨一下，声音干净、能延音，就是按住了；发闷或者有「嗒」的杂音，就是没按实或者碰到隔壁弦。</p>`,
+  },
+  {
+    id: 'practice', icon: '⏱️', title: '怎么练才有效',
+    html: `
+      <ul>
+        <li><b>慢到能弹对，再加速。</b>用节拍器，弹干净了每次 +5 BPM，弹乱了就退回去。</li>
+        <li><b>分段练。</b>一次只练 4 小节，别从头到尾过一遍就算练完。</li>
+        <li><b>每天 15 分钟 &gt; 周末 2 小时。</b>手指的记忆靠频率，不靠时长。</li>
+        <li><b>换和弦练「提前量」。</b>不要等这一拍到了才动手，上一拍打完就开始移下一和弦的手指。</li>
+        <li><b>手疼是正常的</b>，指尖起茧就好；但如果是关节刺痛、手腕发麻，立刻停，那是姿势问题。</li>
+        <li><b>录音回听。</b>自己弹的时候听不出问题，录下来一听全是问题。</li>
+      </ul>`,
+  },
+  {
+    id: 'glossary', icon: '📖', title: '术语速查',
+    html: `
+      <table class="thy">
+        <tr><th>词</th><th>意思</th></tr>
+        <tr><td>品 / 品丝</td><td>琴颈上的金属条；「第 3 品」指第 3 格</td></tr>
+        <tr><td>空弦</td><td>左手不按，直接拨</td></tr>
+        <tr><td>把位</td><td>左手所在的区域，如「第一把位」＝食指在 1 品附近</td></tr>
+        <tr><td>横按</td><td>一根手指同时压多根弦，如 F 和弦</td></tr>
+        <tr><td>闷音</td><td>手掌轻压琴桥附近，让声音变短变闷</td></tr>
+        <tr><td>击弦 / 勾弦</td><td>不用右手拨，靠左手手指敲下去（击）或勾起来（勾）发声</td></tr>
+        <tr><td>推弦</td><td>按弦后把弦往侧面推，让音升高</td></tr>
+        <tr><td>泛音</td><td>手指轻碰弦（不压实）拨响，得到清亮的高音</td></tr>
+        <tr><td>根音</td><td>和弦的名字来源，如 C 和弦的根音是 C</td></tr>
+      </table>`,
+  },
+];
+
+window.GT_DATA = { TUNING, OPEN_MIDI, CHORDS, STARTER_CHORDS, EASY_ORDER, MELODIES, SONGBOOK, LEVELS, THEORY, parseJianpu, midiToFret, jianpuToMidi };

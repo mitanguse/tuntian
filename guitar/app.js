@@ -52,6 +52,7 @@
     $$('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.page === page));
     $$('.page').forEach((p) => p.classList.toggle('on', p.id === 'page-' + page));
     if (page === 'progress') renderProgress();
+    if (page === 'theory') renderTheory();
   }
   $$('#tabs button').forEach((b) => b.addEventListener('click', () => route(b.dataset.page)));
 
@@ -664,7 +665,9 @@
   }
 
   let checkState = null;
-  function runStringCheck(name, wrap) {
+  let checkOff = null;
+
+  async function runStringCheck(name, wrap) {
     const frets = D.CHORDS[name].frets;
     const strings = [];
     frets.forEach((f, i) => {
@@ -672,33 +675,74 @@
       if (f >= 0) strings.push({ s, fret: f, midi: D.OPEN_MIDI[s] + f });
     });
     wrap.innerHTML = strings.map((x) => `<div data-s="${x.s}">${x.s}弦</div>`).join('');
-    checkState = { idx: 0, list: strings, wrap, results: [] };
-    $('#scoreBar').textContent = `请拨 ${strings[0].s} 弦`;
-    const off = A.onFrame((fr) => {
-      if (!checkState || checkState.off !== off) return;
-      if (!fr.midi || fr.clarity < 0.55 || fr.rms < 0.012) return;
-      const cur = checkState.list[checkState.idx];
+
+    // 关键：没开麦就先把麦开上，否则等于什么都没在听
+    if (!micOn) {
+      $('#scoreBar').textContent = '正在开启麦克风…';
+      try {
+        await A.start();
+        micOn = true;
+        micBtn.textContent = '麦克风已开';
+        micBtn.classList.add('on');
+      } catch (e) {
+        $('#scoreBar').textContent = '麦克风没开成，检查浏览器权限';
+        alert('逐弦检查要听声音，需要麦克风权限。\n请点右上角「开启麦克风」，允许后再试。\n' + e.message);
+        return;
+      }
+    }
+
+    if (checkOff) { checkOff(); checkOff = null; }
+    const state = { idx: 0, list: strings, streak: 0, gotAny: false };
+    checkState = state;
+    $('#scoreBar').textContent = `正在听… 请拨 ${strings[0].s} 弦（目标 ${A.midiName(strings[0].midi)}）`;
+    setTimeout(function () {
+      if (checkState === state && !state.gotAny) {
+        $('#scoreBar').textContent = '没听到声音：确认浏览器已允许麦克风、拨弦别太轻，再点一次';
+      }
+    }, 3500);
+
+    checkOff = A.onFrame(function (fr) {
+      if (checkState !== state) return;
+      if (fr.midi && fr.clarity >= 0.45) state.gotAny = true;
+      if (!fr.midi || fr.clarity < 0.45 || fr.rms < 0.004) return;
+      const cur = state.list[state.idx];
       if (!cur) return;
       const box = wrap.querySelector(`[data-s="${cur.s}"]`);
-      if (Math.abs(fr.midi - cur.midi) < 0.7) {
+      if (!box) return;
+      const diff = Math.abs(fr.midi - cur.midi);
+
+      if (diff < 0.8) {
+        state.streak++;
+        $('#scoreBar').textContent = `${cur.s}弦 ${A.midiName(fr.midiRounded)} ✓`;
+        if (state.streak < 2) return;  // 连续两帧确认，防毛刺误判
         box.className = 'ok';
-        checkState.idx++;
-        if (checkState.idx >= checkState.list.length) {
+        box.textContent = `${cur.s}弦 ✓`;
+        state.idx++;
+        state.streak = 0;
+        if (state.idx >= state.list.length) {
           $('#scoreBar').textContent = '全部按对了 ✓ 这个和弦可以用了';
           Store.data.chords[name] = true;
           Store.save();
-          off();
+          checkOff();
+          checkOff = null;
           checkState = null;
         } else {
-          $('#scoreBar').textContent = `请拨 ${checkState.list[checkState.idx].s} 弦`;
+          const nx = state.list[state.idx];
+          $('#scoreBar').textContent = `接着拨 ${nx.s} 弦（目标 ${A.midiName(nx.midi)}）`;
         }
-      } else {
+        return;
+      }
+
+      state.streak = 0;
+      if (diff < 4) {
         box.className = 'bad';
-        box.textContent = `${cur.s}弦 ✗`;
-        setTimeout(() => { if (box) { box.className = ''; box.textContent = `${cur.s}弦`; } }, 900);
+        box.textContent = `${A.midiName(fr.midiRounded)} ✗`;
+        $('#scoreBar').textContent = `听到 ${A.midiName(fr.midiRounded)}，要的是 ${A.midiName(cur.midi)}（${cur.s}弦 ${cur.fret}品）`;
+        setTimeout(function () {
+          if (box && box.className === 'bad') { box.className = ''; box.textContent = `${cur.s}弦`; }
+        }, 1200);
       }
     });
-    if (checkState) checkState.off = off;
   }
 
   /* ================= 节奏 ================= */
@@ -756,6 +800,38 @@
   });
 
   /* ================= 进度 ================= */
+  /* ================= 乐理 ================= */
+  let theoryBuilt = false;
+  function renderTheory() {
+    if (theoryBuilt) return;
+    theoryBuilt = true;
+    const toc = $('#thyToc');
+    const list = $('#thyList');
+    D.THEORY.forEach(function (t, i) {
+      const chip = document.createElement('button');
+      chip.className = 'thy-chip';
+      chip.textContent = t.icon + ' ' + t.title;
+      chip.addEventListener('click', function () {
+        const el = document.getElementById('thy-' + t.id);
+        if (el) { el.open = true; el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      });
+      toc.appendChild(chip);
+
+      const d = document.createElement('details');
+      d.className = 'thy-card';
+      d.id = 'thy-' + t.id;
+      if (i === 0) d.open = true;
+      const s = document.createElement('summary');
+      s.innerHTML = '<span class="ic">' + t.icon + '</span><span>' + t.title + '</span>';
+      d.appendChild(s);
+      const body = document.createElement('div');
+      body.className = 'thy-body';
+      body.innerHTML = t.html;
+      d.appendChild(body);
+      list.appendChild(d);
+    });
+  }
+
   function renderProgress() {
     const cleared = Store.data.cleared;
     const count = Object.keys(cleared).length;
