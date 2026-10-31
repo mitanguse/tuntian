@@ -151,6 +151,8 @@ input[type=range]{width:100%;accent-color:var(--wood2)}
 .thy-body li{margin:4px 0}
 .thy-body b{color:var(--wood2);font-weight:600}
 .thy-body i{color:var(--dim)}
+.thy-body svg{display:block;margin:8px 0;max-width:100%;height:auto;background:#17120e;border:1px solid #2f251d;border-radius:10px}
+.thy-body code{background:#241d16;border:1px solid #2f251d;border-radius:5px;padding:1px 5px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:#e8cfa8}
 table.thy{width:100%;border-collapse:collapse;margin:10px 0;font-size:12.5px}
 table.thy th,table.thy td{border-bottom:1px solid #2f251d;padding:6px 6px;text-align:left}
 table.thy th{color:var(--wood2);font-weight:600}
