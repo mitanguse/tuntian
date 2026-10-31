@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>拾光吉他 · 练琴助手</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="pick">🎸</span><span>拾光吉他</span><small>练琴助手</small></div>
+    <button class="mic-btn" id="micBtn">开启麦克风</button>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-page="tuner" class="on">调音</button>
+    <button data-page="songs">曲谱</button>
+    <button data-page="chords">和弦</button>
+    <button data-page="rhythm">节奏</button>
+    <button data-page="progress">进度</button>
+  </nav>
+
+  <main>
+    <!-- ================= 调音 ================= -->
+    <section class="page on" id="page-tuner">
+      <div class="gauge-wrap">
+        <svg class="gauge" viewBox="0 0 300 170">
+          <path d="M20 150 A130 130 0 0 1 280 150" fill="none" stroke="#2b221a" stroke-width="14" stroke-linecap="round"/>
+          <path d="M40 150 A110 110 0 0 1 260 150" fill="none" stroke="#181310" stroke-width="2"/>
+          <line x1="150" y1="150" x2="150" y2="40" stroke="#3a2e24" stroke-width="2"/>
+          <g id="needle" transform="rotate(0 150 150)">
+            <line x1="150" y1="150" x2="150" y2="38" stroke="#e8a04c" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="150" cy="150" r="7" fill="#e8a04c"/>
+          </g>
+        </svg>
+        <div class="note-big" id="noteName">—</div>
+        <div class="cents" id="centsText">拨一下弦</div>
+      </div>
+      <div class="string-row" id="stringRow"></div>
+      <div class="hint" id="tunerHint">点「开启麦克风」，从 6 弦开始一根一根调。指针居中且变绿就是准了。</div>
+    </section>
+
+    <!-- ================= 曲谱 ================= -->
+    <section class="page" id="page-songs">
+      <div class="seg" id="songSeg">
+        <button data-kind="melody" class="on">单音旋律</button>
+        <button data-kind="chord">弹唱谱</button>
+      </div>
+      <div class="song-list" id="songList"></div>
+    </section>
+
+    <!-- ================= 和弦 ================= -->
+    <section class="page" id="page-chords">
+      <div class="starter-box">
+        <div class="starter-title">先拿下这四个</div>
+        <div class="starter-row" id="starterRow"></div>
+        <div class="hint">Em → Am → C → G，按住了再换。点和弦看指法，点「逐弦检查」一根一根拨，听准不准。</div>
+      </div>
+      <div class="chord-grid" id="chordGrid"></div>
+    </section>
+
+    <!-- ================= 节奏 ================= -->
+    <section class="page" id="page-rhythm">
+      <div class="bpm-box">
+        <div class="bpm-num" id="bpmNum">76</div>
+        <div class="bpm-unit">BPM</div>
+        <input type="range" id="bpmRange" min="40" max="160" value="76">
+      </div>
+      <div class="beat-dots" id="beatDots"></div>
+      <div class="ctrl-row">
+        <button class="btn main" id="metroBtn">开始</button>
+        <div class="mini-seg" id="meterSeg">
+          <button data-v="4" class="on">4/4</button>
+          <button data-v="3">3/4</button>
+          <button data-v="2">2/4</button>
+        </div>
+        <div class="mini-seg" id="subSeg">
+          <button data-v="1" class="on">四分</button>
+          <button data-v="2">八分</button>
+          <button data-v="4">十六</button>
+        </div>
+      </div>
+      <div class="rhythm-tip">
+        练习法：先空弦只练右手（下 下上 上下上），能跟上 70 BPM 再加左手。
+      </div>
+    </section>
+
+    <!-- ================= 进度 ================= -->
+    <section class="page" id="page-progress">
+      <div class="stat-row" id="statRow"></div>
+      <div class="level-list" id="levelList"></div>
+      <div class="hint" id="resetHint"><a href="#" id="resetLink">清空练习记录</a></div>
+    </section>
+  </main>
+
+  <!-- 曲谱详情层 -->
+  <div class="sheet" id="sheet">
+    <div class="sheet-head">
+      <button class="back" id="sheetBack">‹ 返回</button>
+      <div class="sheet-title" id="sheetTitle"></div>
+      <div class="sheet-meta" id="sheetMeta"></div>
+    </div>
+    <div class="sheet-body" id="sheetBody"></div>
+    <div class="score-bar" id="scoreBar">准确率 —</div>
+    <div class="sheet-foot">
+      <button class="btn" id="btnDemo">▶ 听一遍</button>
+      <button class="btn main" id="btnPractice">开始跟练</button>
+      <button class="btn" id="btnStop">■ 停</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="audio.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
